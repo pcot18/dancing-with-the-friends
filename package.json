@@ -1,0 +1,24 @@
+{
+  "name": "dancing-with-the-friends",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "demo": "VITE_DEMO=1 vite",
+    "build": "vite build",
+    "build:demo": "VITE_DEMO=1 SINGLEFILE=1 vite build --outDir dist-demo",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.114.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.62.1",
+    "vite": "^8.2.2",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}
