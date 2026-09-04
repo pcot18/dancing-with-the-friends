@@ -3,7 +3,7 @@
 
 export const SEASON = { id: 1, name: 'Season 35', year: 2026 }
 
-// Premiere Tue Sept 15 2026. Rankings lock Monday 8pm ET; show lock Tuesday 8pm ET.
+// Premiere Tue Sept 15 2026. Live draft room opens Tuesday 7pm ET; show lock Tuesday 8pm ET.
 export const WEEKS = [
   { number: 1,  title: 'Premiere',       tuesday: '2026-09-15' },
   { number: 2,  title: 'Week 2',         tuesday: '2026-09-22' },
@@ -26,10 +26,7 @@ export function etToUtc(dateStr, hour) {
   return d.toISOString()
 }
 export function weekLocks(w) {
-  const tue = new Date(`${w.tuesday}T00:00:00Z`)
-  const mon = new Date(tue); mon.setUTCDate(mon.getUTCDate() - 1)
-  const monStr = mon.toISOString().slice(0, 10)
-  return { rankings_lock_at: etToUtc(monStr, 20), show_lock_at: etToUtc(w.tuesday, 20) }
+  return { draft_opens_at: etToUtc(w.tuesday, 19), show_lock_at: etToUtc(w.tuesday, 20) }
 }
 
 export const COUPLES = [

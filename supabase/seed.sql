@@ -19,18 +19,18 @@ insert into couples (id, season_id, celeb, pro, known_for, tier, position, grade
   (15, 1, 'Sarah Jane Nader', 'Hailey Bills', 'Love Thy Nader', 3, 'Same-sex pairing · rookie pro', 'C', 14, 24, 'Her sister Brooks, S33, ninth place', 'Love Thy Nader, the Nader sister multiverse', 'Actress, model, star of Love Thy Nader, and the second Nader sister to enter the ballroom after Brooks went out ninth. The season''s same-sex pairing, with Hailey Bills promoted from the ensemble to pro. First-year pros go home early far more often than not, but a same-sex partnership means both dancers can lead and follow, and the choreography can go places the standard pairings can''t.', 'Four other reality stars are splitting the same vote. Someone from this tier goes home week 2 and it''s probably not Guillermo.'),
   (16, 1, 'Giada De Laurentiis', 'Alan Bersten', 'Food Network', 3, 'Celebrity chef · veteran presence', 'C', 13, 23, 'Carole Baskin''s scores, Paula Deen''s exit', 'Fifteen seasons of Everyday Italian, everyone''s mom', 'Emmy winner, restaurateur, the face of Food Network for two decades. Chefs have not historically done well here, but chefs have also not historically been paired with Alan Bersten, a champion who can teach anyone a Viennese waltz. She''s camera-trained, composed under pressure, and used to doing precise things with her hands while someone counts down. That''s more relevant than it sounds.', 'Every package will involve a kitchen. Every one. Bruno will make a pasta joke and it will cost her a point.');
 
-insert into weeks (id, season_id, number, title, rankings_lock_at, show_lock_at) values
-  (1, 1, 1, 'Premiere', '2026-09-15T00:00:00.000Z', '2026-09-16T00:00:00.000Z'),
-  (2, 1, 2, 'Week 2', '2026-09-22T00:00:00.000Z', '2026-09-23T00:00:00.000Z'),
-  (3, 1, 3, 'Week 3', '2026-09-29T00:00:00.000Z', '2026-09-30T00:00:00.000Z'),
-  (4, 1, 4, 'Week 4', '2026-10-06T00:00:00.000Z', '2026-10-07T00:00:00.000Z'),
-  (5, 1, 5, 'Week 5', '2026-10-13T00:00:00.000Z', '2026-10-14T00:00:00.000Z'),
-  (6, 1, 6, 'Week 6', '2026-10-20T00:00:00.000Z', '2026-10-21T00:00:00.000Z'),
-  (7, 1, 7, 'Week 7', '2026-10-27T00:00:00.000Z', '2026-10-28T00:00:00.000Z'),
-  (8, 1, 8, 'Week 8', '2026-11-03T01:00:00.000Z', '2026-11-04T01:00:00.000Z'),
-  (9, 1, 9, 'Week 9', '2026-11-10T01:00:00.000Z', '2026-11-11T01:00:00.000Z'),
-  (10, 1, 10, 'Semifinal', '2026-11-17T01:00:00.000Z', '2026-11-18T01:00:00.000Z'),
-  (11, 1, 11, 'Finale', '2026-11-24T01:00:00.000Z', '2026-11-25T01:00:00.000Z');
+insert into weeks (id, season_id, number, title, draft_opens_at, show_lock_at) values
+  (1, 1, 1, 'Premiere', '2026-09-15T23:00:00.000Z', '2026-09-16T00:00:00.000Z'),
+  (2, 1, 2, 'Week 2', '2026-09-22T23:00:00.000Z', '2026-09-23T00:00:00.000Z'),
+  (3, 1, 3, 'Week 3', '2026-09-29T23:00:00.000Z', '2026-09-30T00:00:00.000Z'),
+  (4, 1, 4, 'Week 4', '2026-10-06T23:00:00.000Z', '2026-10-07T00:00:00.000Z'),
+  (5, 1, 5, 'Week 5', '2026-10-13T23:00:00.000Z', '2026-10-14T00:00:00.000Z'),
+  (6, 1, 6, 'Week 6', '2026-10-20T23:00:00.000Z', '2026-10-21T00:00:00.000Z'),
+  (7, 1, 7, 'Week 7', '2026-10-27T23:00:00.000Z', '2026-10-28T00:00:00.000Z'),
+  (8, 1, 8, 'Week 8', '2026-11-04T00:00:00.000Z', '2026-11-04T01:00:00.000Z'),
+  (9, 1, 9, 'Week 9', '2026-11-11T00:00:00.000Z', '2026-11-11T01:00:00.000Z'),
+  (10, 1, 10, 'Semifinal', '2026-11-18T00:00:00.000Z', '2026-11-18T01:00:00.000Z'),
+  (11, 1, 11, 'Finale', '2026-11-25T00:00:00.000Z', '2026-11-25T01:00:00.000Z');
 
 select setval('couples_id_seq', (select max(id) from couples));
 select setval('weeks_id_seq', (select max(id) from weeks));

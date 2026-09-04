@@ -31,7 +31,7 @@ export function Sparkles({ n = 7, seed = 1 }) {
 
 export function useNow(tick = 1000) {
   const [now, setNow] = useState(() => api.now())
-  useEffect(() => { if (api.isDemo) return; const id = setInterval(() => setNow(api.now()), tick); return () => clearInterval(id) }, [tick])
+  useEffect(() => { const id = setInterval(() => setNow(api.now()), tick); return () => clearInterval(id) }, [tick])
   return now
 }
 
@@ -60,14 +60,25 @@ export function useToast() {
 
 export function fmtPts(n) { return (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) }
 
-/** Which week is "current" and what phase it's in. */
-export function currentWeekInfo(weeks, scores, now) {
+/**
+ * Which week is "current" and what phase it's in.
+ * pre      → draft room not open yet (countdown to draft_opens_at)
+ * drafting → live draft in progress
+ * window   → draft done, show not locked: power plays open
+ * live     → show locked, scores pending
+ * scored   → everything's in (season over)
+ */
+export function currentWeekInfo(weeks, scores, drafts, now) {
   const t = now.getTime()
   const scored = new Set(scores.map(s => s.week_id))
   let week = weeks.find(w => new Date(w.show_lock_at).getTime() > t) || weeks[weeks.length - 1]
-  // if this week's scores are already in, show next
   if (scored.has(week.id)) week = weeks.find(w => w.number === week.number + 1) || week
-  const rl = new Date(week.rankings_lock_at).getTime(), sl = new Date(week.show_lock_at).getTime()
-  const phase = t < rl ? 'ranking' : t < sl ? 'window' : scored.has(week.id) ? 'scored' : 'live'
-  return { week, phase, msToRankLock: rl - t, msToShowLock: sl - t }
+  const draft = (drafts || []).find(d => d.week_id === week.id) || null
+  const opens = new Date(week.draft_opens_at).getTime(), sl = new Date(week.show_lock_at).getTime()
+  let phase
+  if (t >= sl) phase = scored.has(week.id) ? 'scored' : 'live'
+  else if (draft?.status === 'done') phase = 'window'
+  else if (draft?.status === 'live') phase = 'drafting'
+  else phase = 'pre'
+  return { week, phase, draft, msToOpen: opens - t, msToShowLock: sl - t, roomOpen: t >= opens }
 }

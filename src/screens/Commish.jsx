@@ -62,7 +62,6 @@ export default function Commish() {
     } catch (e) { showToast(e.message, true) } finally { setBusy(false) }
   }
 
-  async function rerun() { setBusy(true); try { const n = await api.rerunDraft(weekId); showToast(`Draft re-run for ${n} league${n === 1 ? '' : 's'}.`); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
 
   return (
     <div className="stack" style={{ gap: 20 }}>
@@ -106,8 +105,7 @@ export default function Commish() {
       <div className="grid two">
         <section className="card">
           <h3>Draft controls</h3>
-          <p className="small muted">The draft runs itself at each week's rankings lock. If someone's ranking came in late and the league agrees, re-run it. Picks (and any snipes) for that week are wiped and redone.</p>
-          <button className="btn ghost small" disabled={busy || !(isCommissioner || canScore)} onClick={rerun}>Re-run {week.title} draft</button>
+          <p className="small muted">The live draft runs in the <a href="#draft">Draft Room</a>: you open it (any time; friends can open it themselves once it's {fmtET(week.draft_opens_at)}), 60 seconds a pick, random auto-pick on a missed turn. A do-over button lives at the bottom of the Draft Room.</p>
         </section>
         <section className="card">
           <h3>Crown the champion</h3>

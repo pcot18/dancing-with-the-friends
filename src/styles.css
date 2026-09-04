@@ -152,6 +152,10 @@ tr.leader td:first-child { border-left: 4px solid var(--gold); }
 .bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
 .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--pink)); border-radius: 5px; }
 
+/* ---- draft room ---- */
+.draft-grid { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); }
+@media (max-width: 720px) { .draft-grid { grid-template-columns: 1fr; } }
+
 /* ---- commish grid ---- */
 .score-grid { display: grid; grid-template-columns: 1fr repeat(3, 70px) 90px; gap: 6px 10px; align-items: center; }
 .score-grid input[type=number] { width: 100%; padding: 6px 8px; text-align: center; }

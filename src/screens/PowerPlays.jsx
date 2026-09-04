@@ -40,7 +40,7 @@ export default function PowerPlays() {
         <h1>Be a menace, responsibly</h1>
         <p style={{ margin: 0 }}>
           {windowOpen ? <>The trade window is open for <b className="mono">{fmtCountdown(msToShowLock)}</b>. Everything you do here is hidden until the show locks at {fmtET(week.show_lock_at)}, then it's revealed on the Board for everyone. Enjoy that.</>
-            : phase === 'ranking' ? <>Power plays open once the draft runs ({fmtET(week.rankings_lock_at)}) and close at showtime ({fmtET(week.show_lock_at)}).</>
+            : phase === 'pre' || phase === 'drafting' ? <>Power plays open the moment the live draft finishes and close at showtime ({fmtET(week.show_lock_at)}).</>
             : <>Window's closed for this week. Plot for next week.</>}
         </p>
       </section>

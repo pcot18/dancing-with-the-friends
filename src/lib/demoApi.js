@@ -1,10 +1,13 @@
 // In-memory backend with a plausible mid-season snapshot. No network, no login.
-// Pretend it's Tuesday Oct 6, 2026, 10am ET: the week 4 draft has run, the show is tonight,
-// and the trade window (snipes! flags!) is open.
+// Pretend it's Tuesday Oct 6, 2026, 7:02pm ET: the week 4 draft room just opened, the show is
+// at 8, and you're on the clock. The other teams are bots (one of them "isn't here").
 import { SEASON, WEEKS, COUPLES, weekLocks } from '../data/cast.js'
-import { DEFAULT_SETTINGS, previewDraft, draftOrder, rosterSize, isCrunch, computeStandings } from './scoring.js'
+import { DEFAULT_SETTINGS, draftOrder, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const NOW = new Date('2026-10-06T14:00:00Z')
+const DEMO_BASE = new Date('2026-10-06T23:02:00Z').getTime()
+const LOADED = Date.now()
+const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
+const NOW = new Date(DEMO_BASE)
 const ME = 'demo-user-paddy'
 
 function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 } }
@@ -12,7 +15,7 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 10139
 const state = {
   season: { ...SEASON, winner_couple_id: null, is_current: true },
   couples: COUPLES.map(c => ({ ...c, season_id: SEASON.id, eliminated_week: null })),
-  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: 3, resolved: false, ...weekLocks(w) })),
+  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: 3, ...weekLocks(w) })),
   scores: [],
   league: { id: 'demo-league', season_id: SEASON.id, name: 'Tuesday Night Ballroom Crimes', invite_code: 'SEQUIN', commissioner: ME, settings: { ...DEFAULT_SETTINGS } },
   teams: [
@@ -27,20 +30,15 @@ const state = {
     { team_id: 't3', user_id: 'u5', display_name: 'mike' }, { team_id: 't3', user_id: 'u6', display_name: 'jess' },
     { team_id: 't4', user_id: 'u7', display_name: 'kev' }, { team_id: 't4', user_id: 'u8', display_name: 'sam' },
   ],
-  rankings: [],
+  drafts: [],
   picks: [],
   powerPlays: [],
 }
+const listeners = new Set()
+const emit = () => listeners.forEach(cb => { try { cb() } catch {} })
 
-// --- simulate weeks 1–3 scored, week 4 drafted ---------------------------------
 const rand = rng(35)
-const teamIds = state.teams.map(t => t.id)
-const eliminations = { 2: [16], 3: [15] }   // Giada goes week 2, Sarah Jane week 3
 
-function fakeRanking(seed) {
-  const r = rng(seed)
-  return [...state.couples].map(c => ({ c, k: (c.floor + c.ceiling) / 2 + (r() - 0.5) * 8 })).sort((a, b) => b.k - a.k).map(x => x.c.id)
-}
 function fakeScore(c, week) {
   const spread = c.ceiling - c.floor
   const base = c.floor + spread * (0.35 + 0.08 * week.number) + (rand() - 0.5) * spread * 0.5
@@ -49,36 +47,47 @@ function fakeScore(c, week) {
   return { raw_total: perDance * dances, max_possible: 30 * dances }
 }
 
-function runDraft(week) {
-  const alive = state.couples.filter(c => c.eliminated_week == null).map(c => c.id)
-  const teams = state.teams
-  const order = draftOrder({ week, weeks: state.weeks, teams, standingsInput: { season: state.season, league: state.league, teams, weeks: state.weeks, scores: state.scores, picks: state.picks, powerPlays: state.powerPlays, couples: state.couples } })
-  const rankings = Object.fromEntries(state.rankings.filter(r => r.week_id === week.id).map(r => [r.team_id, r.ordered_couple_ids]))
-  const fallback = [...alive]
+const standingsInput = () => ({ season: state.season, league: state.league, teams: state.teams, weeks: state.weeks, scores: state.scores, picks: state.picks, powerPlays: state.powerPlays, couples: state.couples })
+const alive = () => state.couples.filter(c => c.eliminated_week == null).map(c => c.id)
+const takenIn = (weekId) => new Set(state.picks.filter(p => p.week_id === weekId).map(p => p.couple_id))
+
+function openDraft(week) {
+  const order = draftOrder({ week, weeks: state.weeks, teams: state.teams, standingsInput: standingsInput() }).map(t => t.id)
+  const a = alive(); const crunch = isCrunch(a.length, state.teams.length)
+  const d = { league_id: state.league.id, week_id: week.id, status: 'live', order_ids: order, roster: crunch ? 1 : rosterSize(a.length, state.teams.length), crunch,
+    current_index: 0, pick_seconds: 60, pick_deadline_at: new Date(nowMs() + 60000).toISOString(), started_at: new Date(nowMs()).toISOString(), finished_at: null }
+  state.drafts = state.drafts.filter(x => x.week_id !== week.id); state.drafts.push(d)
   state.picks = state.picks.filter(p => p.week_id !== week.id)
-  if (isCrunch(alive.length, teams.length)) {
-    for (const t of teams) {
-      const choice = (rankings[t.id] || fallback).find(id => alive.includes(id))
-      state.picks.push({ team_id: t.id, week_id: week.id, couple_id: choice, pick_number: 0, shared: true, sniped: false })
-    }
-  } else {
-    const res = previewDraft({ order, rankings, alive, roster: rosterSize(alive.length, teams.length), fallbackOrder: fallback })
-    let n = 0
-    for (const t of order) for (const cid of res[t.id]) state.picks.push({ team_id: t.id, week_id: week.id, couple_id: cid, pick_number: ++n, shared: false, sniped: false })
-  }
-  week.resolved = true
+  return d
+}
+function applyPick(d, coupleId, auto) {
+  const team = drafterAt(d.order_ids, d.current_index, d.crunch)
+  state.picks.push({ team_id: team, week_id: d.week_id, couple_id: coupleId, pick_number: d.current_index + 1, shared: d.crunch, sniped: false, auto })
+  d.current_index += 1
+  if (d.current_index >= totalPicks(d)) { d.status = 'done'; d.finished_at = new Date(nowMs()).toISOString(); d.pick_deadline_at = null }
+  else d.pick_deadline_at = new Date(nowMs() + d.pick_seconds * 1000).toISOString()
+}
+function randomAvailable(d) {
+  const pool = alive().filter(id => d.crunch || !takenIn(d.week_id).has(id))
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+// bots draft by form with some noise; that's how "present" friends behave
+function botChoice(d, seed) {
+  const r = rng(seed)
+  const taken = takenIn(d.week_id)
+  const pool = state.couples.filter(c => c.eliminated_week == null && (d.crunch || !taken.has(c.id)))
+  return pool.map(c => ({ c, k: (c.floor + c.ceiling) / 2 + (r() - 0.5) * 10 })).sort((a, b) => b.k - a.k)[0].c.id
 }
 
-for (const week of state.weeks.filter(w => w.number <= 4)) {
-  teamIds.forEach((tid, i) => state.rankings.push({ team_id: tid, week_id: week.id, ordered_couple_ids: fakeRanking(week.number * 10 + i), updated_at: NOW.toISOString() }))
-  runDraft(week)
-  if (week.number <= 3) {
-    const elim = eliminations[week.number] || []
-    for (const c of state.couples.filter(c => c.eliminated_week == null)) {
-      state.scores.push({ week_id: week.id, couple_id: c.id, ...fakeScore(c, week), eliminated: elim.includes(c.id) })
-    }
-    for (const id of elim) state.couples.find(c => c.id === id).eliminated_week = week.number
-  }
+// --- weeks 1–3: drafted and scored instantly -----------------------------------
+const eliminations = { 2: [16], 3: [15] }   // Giada goes week 2, Sarah Jane week 3
+for (const week of state.weeks.filter(w => w.number <= 3)) {
+  const d = openDraft(week)
+  let i = 0
+  while (d.status === 'live') applyPick(d, botChoice(d, week.number * 100 + i++), false)
+  const elim = eliminations[week.number] || []
+  for (const c of state.couples.filter(c => c.eliminated_week == null)) state.scores.push({ week_id: week.id, couple_id: c.id, ...fakeScore(c, week), eliminated: elim.includes(c.id) })
+  for (const id of elim) state.couples.find(c => c.id === id).eliminated_week = week.number
 }
 // a couple of power plays already spent, for flavor
 state.powerPlays.push({ id: 'pp1', team_id: 't2', week_id: 2, kind: 'lift', target_team_id: 't3', created_at: NOW.toISOString() })
@@ -90,6 +99,20 @@ state.powerPlays.push({ id: 'pp1', team_id: 't2', week_id: 2, kind: 'lift', targ
   state.powerPlays.push({ id: 'pp2', team_id: 't4', week_id: 3, kind: 'snipe', target_team_id: 't3', give_couple_id: b.couple_id, take_couple_id: a.couple_id, created_at: NOW.toISOString() })
 }
 
+// --- week 4: the room is open, you're on the clock -----------------------------
+const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
+openDraft(state.weeks[3])
+let botTimer = null
+function scheduleBots() {
+  clearTimeout(botTimer)
+  const d = state.drafts.find(x => x.week_id === 4)
+  if (!d || d.status !== 'live') return
+  const onClock = drafterAt(d.order_ids, d.current_index, d.crunch)
+  if (onClock === 't1' || onClock === ABSENT) return   // you, or the empty chair
+  botTimer = setTimeout(() => { applyPick(d, botChoice(d, Date.now()), false); emit(); scheduleBots() }, 2500 + Math.random() * 4000)
+}
+scheduleBots()
+
 // --- api ----------------------------------------------------------------------
 const clone = (x) => JSON.parse(JSON.stringify(x))
 const wait = (ms = 120) => new Promise(r => setTimeout(r, ms))
@@ -97,7 +120,7 @@ let authListeners = []
 
 export const demoApi = {
   isDemo: true,
-  now: () => new Date(NOW),
+  now: () => new Date(nowMs()),
   auth: {
     async getUser() { return { id: ME, email: 'paddy@example.com' } },
     async signIn() { return {} },
@@ -110,12 +133,24 @@ export const demoApi = {
   async loadMyLeagues() { return clone([state.league]) },
   async loadLeague() {
     await wait()
-    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, rankings: state.rankings, myTeam: state.teams[0], isCommissioner: true })
+    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, myTeam: state.teams[0], isCommissioner: true })
   },
-  async saveRanking(team_id, week_id, ordered_couple_ids) {
-    const r = state.rankings.find(r => r.team_id === team_id && r.week_id === week_id)
-    if (r) Object.assign(r, { ordered_couple_ids, updated_at: NOW.toISOString() }); else state.rankings.push({ team_id, week_id, ordered_couple_ids, updated_at: NOW.toISOString() })
+  async startDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
+  async makePick(_l, week_id, couple_id) {
+    const d = state.drafts.find(x => x.week_id === week_id)
+    if (!d || d.status !== 'live') throw new Error('No live draft')
+    if (drafterAt(d.order_ids, d.current_index, d.crunch) !== 't1') throw new Error('You are not on the clock')
+    if (!d.crunch && takenIn(week_id).has(couple_id)) throw new Error('Already taken')
+    applyPick(d, couple_id, false); emit(); scheduleBots()
   },
+  async autoPick(_l, week_id) {
+    const d = state.drafts.find(x => x.week_id === week_id)
+    if (!d || d.status !== 'live') return
+    if (nowMs() < new Date(d.pick_deadline_at).getTime()) throw new Error('Clock has not run out yet')
+    applyPick(d, randomAvailable(d), true); emit(); scheduleBots()
+  },
+  async resetDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
+  subscribe(_l, cb) { listeners.add(cb); return () => listeners.delete(cb) },
   async updateTeam(teamId, patch) { Object.assign(state.teams.find(t => t.id === teamId), patch) },
   async useSnipe(week_id, target_team, give, take) {
     await wait()
@@ -133,7 +168,6 @@ export const demoApi = {
     if (state.powerPlays.some(p => p.team_id === me.id && p.kind === 'lift')) throw new Error('No illegal-lift flags left this season')
     state.powerPlays.push({ id: 'pp' + Date.now(), team_id: me.id, week_id, kind: 'lift', target_team_id: target_team, created_at: NOW.toISOString() })
   },
-  async rerunDraft(week_id) { runDraft(state.weeks.find(w => w.id === week_id)); return 1 },
   async saveScores(week, rows, eliminatedIds) {
     await wait()
     state.scores = state.scores.filter(s => s.week_id !== week.id)

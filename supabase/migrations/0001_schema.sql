@@ -1,4 +1,4 @@
--- Dancing with the Friends — schema, security, draft resolver, power plays.
+-- Dancing with the Friends — schema, security, live draft, power plays.
 -- Run this in the Supabase SQL editor (or `supabase db push`), then run seed.sql.
 
 -- ---------------------------------------------------------------------------
@@ -36,10 +36,9 @@ create table weeks (
   season_id         int references seasons on delete cascade,
   number            int not null,
   title             text,
-  rankings_lock_at  timestamptz not null,   -- draft runs here (Mon 8pm ET)
+  draft_opens_at    timestamptz not null,   -- live draft room opens (Tue 7pm ET)
   show_lock_at      timestamptz not null,   -- power plays close here (Tue 8pm ET)
   judge_count       int default 3,
-  resolved          boolean default false,
   unique (season_id, number)
 );
 
@@ -111,12 +110,20 @@ create table team_members (
   primary key (team_id, user_id)
 );
 
-create table rankings (
-  team_id             uuid references teams on delete cascade,
-  week_id             int references weeks on delete cascade,
-  ordered_couple_ids  int[] not null,
-  updated_at          timestamptz default now(),
-  primary key (team_id, week_id)
+-- One live draft per league per week.
+create table drafts (
+  league_id         uuid references leagues on delete cascade,
+  week_id           int references weeks on delete cascade,
+  status            text not null default 'live' check (status in ('live', 'done')),
+  order_ids         uuid[] not null,        -- round-1 order; snake from there
+  roster            int not null,           -- picks per team (crunch: 1)
+  crunch            boolean default false,  -- fewer couples than teams: duplicates allowed
+  current_index     int default 0,          -- overall pick number, 0-based
+  pick_seconds      int default 60,
+  pick_deadline_at  timestamptz,
+  started_at        timestamptz default now(),
+  finished_at       timestamptz,
+  primary key (league_id, week_id)
 );
 
 create table picks (
@@ -126,6 +133,7 @@ create table picks (
   pick_number  int,                     -- overall pick number; 0 in crunch weeks
   shared       boolean default false,   -- crunch-time pick (points split among owners)
   sniped       boolean default false,   -- moved by a snipe this week; can't be sniped again
+  auto         boolean default false,   -- timer ran out: random pick
   primary key (team_id, week_id, couple_id)
 );
 
@@ -243,117 +251,145 @@ language sql stable set search_path = public as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Draft resolver: runs at rankings_lock_at for every league in the season
+-- Live draft
 -- ---------------------------------------------------------------------------
-create or replace function resolve_week(p_week int) returns int
+-- Which team is on the clock at overall pick index i (0-based), snake order.
+create or replace function drafter_at(p_order uuid[], p_index int, p_crunch boolean) returns uuid
+language sql immutable as $$
+  select case
+    when p_crunch then p_order[p_index + 1]
+    when (p_index / array_length(p_order, 1)) % 2 = 0 then p_order[(p_index % array_length(p_order, 1)) + 1]
+    else p_order[array_length(p_order, 1) - (p_index % array_length(p_order, 1))]
+  end;
+$$;
+
+-- Open the draft room. Any league member can start it once the week's draft_opens_at has passed
+-- (so the commissioner being late doesn't hold up the party); the commissioner can start it any time.
+create or replace function start_draft(p_league uuid, p_week int) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  w        weeks%rowtype;
-  lg       record;
-  n_teams  int;
-  alive    int[];
-  n_alive  int;
-  roster   int;
-  order_ids uuid[];
-  r        int;
-  i        int;
-  tid      uuid;
-  ranked   int[];
-  chosen   int;
-  taken    int[];
-  pickno   int;
-  leagues_done int := 0;
+  w weeks%rowtype; n int; alive int; ord uuid[]; roster int; crunch boolean;
 begin
   select * into w from weeks where id = p_week;
-  if w is null then raise exception 'no such week'; end if;
+  if not exists (select 1 from leagues where id = p_league and commissioner = auth.uid())
+     and not (is_league_member(p_league) and now() >= w.draft_opens_at)
+    then raise exception 'The commissioner opens the room (or anyone, once it is draft time)'; end if;
+  if exists (select 1 from drafts where league_id = p_league and week_id = p_week) then raise exception 'Draft already started'; end if;
+  if exists (select 1 from scores where week_id = p_week) then raise exception 'That week is already scored'; end if;
 
-  -- couples still standing
-  select coalesce(array_agg(id order by id), '{}') into alive
-  from couples where season_id = w.season_id and eliminated_week is null;
-  n_alive := coalesce(array_length(alive, 1), 0);
+  select count(*) into n from teams where league_id = p_league;
+  select count(*) into alive from couples where season_id = w.season_id and eliminated_week is null;
+  if n = 0 or alive = 0 then raise exception 'Nothing to draft'; end if;
 
-  for lg in select * from leagues where season_id = w.season_id loop
-    delete from picks where week_id = p_week
-      and team_id in (select id from teams where league_id = lg.id);
+  if w.number = 1 or not exists (select 1 from scores s join weeks x on x.id = s.week_id where x.season_id = w.season_id and x.number < w.number) then
+    select array_agg(id order by draft_seed) into ord from teams where league_id = p_league;
+  else
+    select array_agg(t.id order by lt.total asc, lt.weekly_wins asc, t.draft_seed) into ord
+    from teams t join league_totals(p_league, w.number - 1) lt on lt.team_id = t.id where t.league_id = p_league;
+  end if;
+  crunch := alive < n;
+  roster := case when crunch then 1 else alive / n end;
 
-    select count(*) into n_teams from teams where league_id = lg.id;
-    if n_teams = 0 then continue; end if;
-
-    -- draft order: week 1 by seed, otherwise reverse standings (last place first)
-    if w.number = 1 then
-      select array_agg(id order by draft_seed) into order_ids from teams where league_id = lg.id;
-    else
-      select array_agg(t.id order by lt.total asc, lt.weekly_wins asc, t.draft_seed)
-      into order_ids
-      from teams t join league_totals(lg.id, w.number - 1) lt on lt.team_id = t.id
-      where t.league_id = lg.id;
-    end if;
-
-    taken := '{}';
-    pickno := 0;
-
-    if n_alive < n_teams then
-      -- CRUNCH TIME: everyone takes their top-ranked living couple; duplicates allowed
-      foreach tid in array order_ids loop
-        select ordered_couple_ids into ranked from rankings where team_id = tid and week_id = p_week;
-        chosen := null;
-        if ranked is not null then
-          foreach i in array ranked loop
-            if i = any(alive) then chosen := i; exit; end if;
-          end loop;
-        end if;
-        if chosen is null then chosen := best_available(p_week, alive, '{}'); end if;
-        insert into picks (team_id, week_id, couple_id, pick_number, shared)
-        values (tid, p_week, chosen, 0, true);
-      end loop;
-    else
-      roster := n_alive / n_teams;
-      for r in 1..roster loop
-        for i in 1..n_teams loop
-          -- snake: odd rounds forward, even rounds backward
-          tid := case when r % 2 = 1 then order_ids[i] else order_ids[n_teams - i + 1] end;
-          select ordered_couple_ids into ranked from rankings where team_id = tid and week_id = p_week;
-          chosen := null;
-          if ranked is not null then
-            declare c int;
-            begin
-              foreach c in array ranked loop
-                if c = any(alive) and not (c = any(taken)) then chosen := c; exit; end if;
-              end loop;
-            end;
-          end if;
-          if chosen is null then chosen := best_available(p_week, alive, taken); end if;
-          pickno := pickno + 1;
-          taken := taken || chosen;
-          insert into picks (team_id, week_id, couple_id, pick_number, shared)
-          values (tid, p_week, chosen, pickno, false);
-        end loop;
-      end loop;
-    end if;
-    leagues_done := leagues_done + 1;
-  end loop;
-
-  update weeks set resolved = true where id = p_week;
-  return leagues_done;
+  delete from picks where week_id = p_week and team_id in (select id from teams where league_id = p_league);
+  insert into drafts (league_id, week_id, order_ids, roster, crunch, pick_deadline_at)
+  values (p_league, p_week, ord, roster, crunch, now() + interval '60 seconds');
 end $$;
 
--- Fallback when a team never submitted a ranking: best score last week, else lowest id.
-create or replace function best_available(p_week int, p_alive int[], p_taken int[]) returns int
-language sql stable set search_path = public as $$
-  with prev as (
-    select s.couple_id, s.raw_total from scores s join weeks w on w.id = s.week_id
-    where w.number = (select number - 1 from weeks where id = p_week)
-      and w.season_id = (select season_id from weeks where id = p_week)
-  )
-  select c.id from couples c left join prev on prev.couple_id = c.id
-  where c.id = any(p_alive) and not (c.id = any(p_taken))
-  order by prev.raw_total desc nulls last, c.id asc limit 1;
-$$;
+-- Make a pick. p_couple null = random from the available pool (used by the timer).
+create or replace function make_pick(p_league uuid, p_week int, p_couple int default null) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  d drafts%rowtype; w weeks%rowtype; on_clock uuid; n int; total int; chosen int; is_auto boolean := false;
+begin
+  select * into d from drafts where league_id = p_league and week_id = p_week for update;
+  if d is null or d.status <> 'live' then raise exception 'No live draft'; end if;
+  select * into w from weeks where id = p_week;
+  n := array_length(d.order_ids, 1);
+  total := case when d.crunch then n else d.roster * n end;
+  on_clock := drafter_at(d.order_ids, d.current_index, d.crunch);
+
+  if p_couple is null then
+    -- timer expired: anyone in the league can trigger the random pick
+    if now() < d.pick_deadline_at then raise exception 'Clock has not run out yet'; end if;
+    if not is_league_member(p_league) then raise exception 'Not your league'; end if;
+    select id into chosen from couples
+    where season_id = w.season_id and eliminated_week is null
+      and (d.crunch or id not in (select couple_id from picks p join teams t on t.id = p.team_id where t.league_id = p_league and p.week_id = p_week))
+    order by random() limit 1;
+    is_auto := true;
+  else
+    if not is_team_member(on_clock) then raise exception 'You are not on the clock'; end if;
+    if not exists (select 1 from couples where id = p_couple and season_id = w.season_id and eliminated_week is null)
+      then raise exception 'That couple is not in the pool'; end if;
+    if not d.crunch and exists (select 1 from picks p join teams t on t.id = p.team_id where t.league_id = p_league and p.week_id = p_week and p.couple_id = p_couple)
+      then raise exception 'Already taken'; end if;
+    chosen := p_couple;
+  end if;
+
+  insert into picks (team_id, week_id, couple_id, pick_number, shared, auto)
+  values (on_clock, p_week, chosen, d.current_index + 1, d.crunch, is_auto);
+
+  if d.current_index + 1 >= total then
+    update drafts set status = 'done', current_index = d.current_index + 1, finished_at = now(), pick_deadline_at = null
+    where league_id = p_league and week_id = p_week;
+  else
+    update drafts set current_index = d.current_index + 1, pick_deadline_at = now() + make_interval(secs => d.pick_seconds)
+    where league_id = p_league and week_id = p_week;
+  end if;
+  return chosen;
+end $$;
+
+-- Commissioner do-over: wipe the week's draft and picks (and any snipes on them).
+create or replace function reset_draft(p_league uuid, p_week int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from leagues where id = p_league and commissioner = auth.uid()) and not is_admin()
+    then raise exception 'Commissioners only'; end if;
+  if exists (select 1 from scores where week_id = p_week) then raise exception 'That week is already scored'; end if;
+  delete from power_plays where week_id = p_week and team_id in (select id from teams where league_id = p_league);
+  delete from picks where week_id = p_week and team_id in (select id from teams where league_id = p_league);
+  delete from drafts where league_id = p_league and week_id = p_week;
+end $$;
+
+-- Backstop for the timer when nobody has the page open: pg_cron calls this every minute.
+create or replace function sweep_drafts() returns int
+language plpgsql security definer set search_path = public as $$
+declare d record; n int := 0;
+begin
+  for d in select league_id, week_id from drafts where status = 'live' and pick_deadline_at < now() loop
+    perform make_pick_system(d.league_id, d.week_id); n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- Same as make_pick(null) but without the membership check, for the cron sweep.
+create or replace function make_pick_system(p_league uuid, p_week int) returns int
+language plpgsql security definer set search_path = public as $$
+declare d drafts%rowtype; w weeks%rowtype; on_clock uuid; n int; total int; chosen int;
+begin
+  select * into d from drafts where league_id = p_league and week_id = p_week for update;
+  if d is null or d.status <> 'live' or now() < d.pick_deadline_at then return null; end if;
+  select * into w from weeks where id = p_week;
+  n := array_length(d.order_ids, 1);
+  total := case when d.crunch then n else d.roster * n end;
+  on_clock := drafter_at(d.order_ids, d.current_index, d.crunch);
+  select id into chosen from couples
+  where season_id = w.season_id and eliminated_week is null
+    and (d.crunch or id not in (select couple_id from picks p join teams t on t.id = p.team_id where t.league_id = p_league and p.week_id = p_week))
+  order by random() limit 1;
+  insert into picks (team_id, week_id, couple_id, pick_number, shared, auto) values (on_clock, p_week, chosen, d.current_index + 1, d.crunch, true);
+  if d.current_index + 1 >= total then
+    update drafts set status = 'done', current_index = d.current_index + 1, finished_at = now(), pick_deadline_at = null where league_id = p_league and week_id = p_week;
+  else
+    update drafts set current_index = d.current_index + 1, pick_deadline_at = now() + make_interval(secs => d.pick_seconds) where league_id = p_league and week_id = p_week;
+  end if;
+  return chosen;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Power plays
 -- ---------------------------------------------------------------------------
--- SNIPE: between rankings lock and show lock, swap one of your drafted couples
+-- SNIPE: after the draft finishes and before show lock, swap one of your drafted couples
 -- for one of a rival's. Once per season. A sniped couple can't be re-sniped that week.
 create or replace function use_snipe(p_week int, p_target_team uuid, p_give int, p_take int)
 returns void language plpgsql security definer set search_path = public as $$
@@ -365,7 +401,7 @@ begin
   me := my_team_in_league(lg);
   if me is null then raise exception 'You are not on a team in this league'; end if;
   if me = p_target_team then raise exception 'You cannot snipe yourself, although we respect it'; end if;
-  if not w.resolved then raise exception 'The draft has not run yet'; end if;
+  if not exists (select 1 from drafts where league_id = lg and week_id = p_week and status = 'done') then raise exception 'The draft is not finished yet'; end if;
   if now() >= w.show_lock_at then raise exception 'Too late — the show is live'; end if;
   select (settings->>'snipes_per_season')::int into allowed from leagues where id = lg;
   select count(*) into used from power_plays where team_id = me and kind = 'snipe';
@@ -447,15 +483,6 @@ language sql security definer stable set search_path = public as $$
   where l.invite_code = upper(trim(p_code));
 $$;
 
--- Commissioner (or admin) can re-run the draft for a week, e.g. after a late ranking.
-create or replace function rerun_draft(p_week int) returns int
-language plpgsql security definer set search_path = public as $$
-begin
-  if not is_admin() and not exists (select 1 from leagues where commissioner = auth.uid())
-    then raise exception 'Commissioners only'; end if;
-  return resolve_week(p_week);
-end $$;
-
 -- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------
@@ -467,7 +494,7 @@ alter table profiles enable row level security;
 alter table leagues enable row level security;
 alter table teams enable row level security;
 alter table team_members enable row level security;
-alter table rankings enable row level security;
+alter table drafts enable row level security;
 alter table picks enable row level security;
 alter table power_plays enable row level security;
 
@@ -493,14 +520,7 @@ create policy "edit my team" on teams for update to authenticated using (is_team
 create policy "read members" on team_members for select to authenticated
   using (is_league_member((select league_id from teams where id = team_id)));
 
-create policy "read rankings after lock" on rankings for select to authenticated
-  using (is_team_member(team_id) or (
-    is_league_member((select league_id from teams where id = team_id))
-    and now() >= (select rankings_lock_at from weeks where id = week_id)));
-create policy "write my ranking before lock" on rankings for insert to authenticated
-  with check (is_team_member(team_id) and now() < (select rankings_lock_at from weeks where id = week_id));
-create policy "update my ranking before lock" on rankings for update to authenticated
-  using (is_team_member(team_id) and now() < (select rankings_lock_at from weeks where id = week_id));
+create policy "read drafts" on drafts for select to authenticated using (is_league_member(league_id));
 
 create policy "read picks" on picks for select to authenticated
   using (is_league_member((select league_id from teams where id = team_id)));
@@ -513,11 +533,14 @@ create policy "read power plays" on power_plays for select to authenticated
     and now() >= (select show_lock_at from weeks where id = week_id)));
 
 -- ---------------------------------------------------------------------------
--- Scheduling: run the draft automatically at each week's rankings lock.
--- Requires the pg_cron extension (Database → Extensions → pg_cron).
+-- Scheduling + realtime
 -- ---------------------------------------------------------------------------
+-- The draft clock is enforced by the browser tabs that are open (any member's tab triggers the
+-- random pick once the 60s is up). pg_cron is the backstop for when every tab is closed.
+-- Requires the pg_cron extension (Database → Extensions → pg_cron).
 create extension if not exists pg_cron;
-select cron.schedule('dwtf-resolve-drafts', '*/5 * * * *', $$
-  select resolve_week(id) from weeks
-  where not resolved and rankings_lock_at <= now() and rankings_lock_at > now() - interval '2 days';
-$$);
+select cron.schedule('dwtf-sweep-drafts', '* * * * *', $$ select sweep_drafts(); $$);
+
+-- Live updates for the draft room (Database → Replication must include these tables;
+-- this statement does it for you on a default project).
+alter publication supabase_realtime add table drafts, picks;

@@ -3,7 +3,7 @@ import { api } from './lib/api.js'
 import { computeStandings } from './lib/scoring.js'
 import { DataCtx, Sparkles, Toast, useToast, useNow, currentWeekInfo, fmtPts } from './ui.jsx'
 import Board from './screens/Board.jsx'
-import Picks from './screens/Picks.jsx'
+import DraftRoom from './screens/DraftRoom.jsx'
 import PowerPlays from './screens/PowerPlays.jsx'
 import Cast from './screens/Cast.jsx'
 import Recap from './screens/Recap.jsx'
@@ -11,7 +11,7 @@ import Commish from './screens/Commish.jsx'
 import Login from './screens/Login.jsx'
 import JoinLeague from './screens/JoinLeague.jsx'
 
-const TABS = [['board', 'Board'], ['picks', 'My Picks'], ['power', 'Power Plays'], ['cast', 'Cast'], ['recap', 'Recaps']]
+const TABS = [['board', 'Board'], ['draft', 'Draft Room'], ['power', 'Power Plays'], ['cast', 'Cast'], ['recap', 'Recaps']]
 
 function tabFromHash() { return (location.hash.replace('#', '') || 'board').split('/')[0] }
 
@@ -48,8 +48,18 @@ export default function App() {
   }
   useEffect(() => { if (user) reload() }, [user, leagueId])
 
+  // live updates: picks, draft clock, power plays
+  useEffect(() => {
+    if (!user || !leagueId) return
+    let busy = false
+    return api.subscribe(leagueId, async () => {
+      if (busy) return; busy = true
+      try { const [s, l] = await Promise.all([api.loadSeason(), api.loadLeague(leagueId)]); setSeason(s); setLeagueData(l) } catch {} finally { busy = false }
+    })
+  }, [user, leagueId])
+
   const standings = useMemo(() => season && leagueData ? computeStandings({ season: season.season, league: leagueData.league, teams: leagueData.teams, weeks: season.weeks, scores: season.scores, picks: leagueData.picks, powerPlays: leagueData.powerPlays, couples: season.couples }) : null, [season, leagueData])
-  const weekInfo = useMemo(() => season ? currentWeekInfo(season.weeks, season.scores, now) : null, [season, now])
+  const weekInfo = useMemo(() => season ? currentWeekInfo(season.weeks, season.scores, leagueData?.drafts, now) : null, [season, leagueData, now])
 
   if (user === undefined) return <div className="login"><div className="display" style={{ fontSize: '2rem' }}>Warming up… 🪩</div></div>
   if (!user) return <Login />
@@ -64,12 +74,12 @@ export default function App() {
     `${leagueData.league.name}`,
     leader ? `LEADER ${leader.team.emoji} ${leader.team.name} · ${fmtPts(leader.total)} pts` : 'No scores yet',
     ...standings.ranked.slice(1).map(l => `${l.team.emoji} ${l.team.name} −${fmtPts(l.behind)}`),
-    weekInfo.phase === 'ranking' ? `RANKINGS LOCK ${new Date(weekInfo.week.rankings_lock_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', timeZone: 'America/New_York' })} ET` : weekInfo.phase === 'window' ? `TRADE WINDOW OPEN · ${weekInfo.week.title}` : `${weekInfo.week.title} · LIVE`,
+    weekInfo.phase === 'pre' ? `${weekInfo.week.title.toUpperCase()} DRAFT ${new Date(weekInfo.week.draft_opens_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', timeZone: 'America/New_York' })} ET` : weekInfo.phase === 'drafting' ? `DRAFT IN PROGRESS · ${weekInfo.week.title}` : weekInfo.phase === 'window' ? `TRADE WINDOW OPEN · ${weekInfo.week.title}` : `${weekInfo.week.title} · LIVE`,
     `${season.couples.filter(c => !c.eliminated_week).length} couples still dancing`,
     api.isDemo ? 'DEMO MODE · fake scores, fake friends, real feelings' : '',
   ].filter(Boolean)
 
-  const Screen = { board: Board, picks: Picks, power: PowerPlays, cast: Cast, recap: Recap, commish: Commish }[tab] || Board
+  const Screen = { board: Board, draft: DraftRoom, picks: DraftRoom, power: PowerPlays, cast: Cast, recap: Recap, commish: Commish }[tab] || Board
 
   return (
     <DataCtx.Provider value={ctx}>

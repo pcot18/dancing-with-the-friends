@@ -112,18 +112,11 @@ export function isCrunch(aliveCount, teamCount) {
   return aliveCount < teamCount
 }
 
-/** Client-side preview of what a snake draft would produce given every team's ranking (used on the Picks screen). */
-export function previewDraft({ order, rankings, alive, roster, fallbackOrder }) {
-  const taken = new Set()
-  const result = {}
-  order.forEach(t => { result[t.id] = [] })
-  for (let r = 1; r <= roster; r++) {
-    const seq = r % 2 === 1 ? order : [...order].reverse()
-    for (const t of seq) {
-      const ranked = rankings[t.id] || fallbackOrder
-      const choice = ranked.find(id => alive.includes(id) && !taken.has(id)) ?? fallbackOrder.find(id => alive.includes(id) && !taken.has(id))
-      if (choice != null) { taken.add(choice); result[t.id].push(choice) }
-    }
-  }
-  return result
+/** Which team is on the clock at overall pick index i (0-based). Mirrors drafter_at() in SQL. */
+export function drafterAt(orderIds, index, crunch) {
+  const n = orderIds.length
+  if (crunch) return orderIds[index]
+  const round = Math.floor(index / n), pos = index % n
+  return round % 2 === 0 ? orderIds[pos] : orderIds[n - 1 - pos]
 }
+export function totalPicks(draft) { return draft.crunch ? draft.order_ids.length : draft.roster * draft.order_ids.length }
