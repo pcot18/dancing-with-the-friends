@@ -25,7 +25,7 @@ export default function Board() {
           <span className={`pill ${phase === 'live' || phase === 'drafting' ? 'live' : phase === 'window' ? 'pink' : 'blue'}`}>
             {phase === 'pre' && (msToOpen > 0 ? `Draft room opens in ${fmtCountdown(msToOpen)}` : 'Draft room can open')}
             {phase === 'drafting' && 'Draft in progress'}
-            {phase === 'window' && `Trade window · closes in ${fmtCountdown(msToShowLock)}`}
+            {phase === 'window' && `Snipe window · closes in ${fmtCountdown(msToShowLock)}`}
             {phase === 'live' && 'Show is live · scores pending'}
             {phase === 'scored' && 'Season complete'}
           </span>
@@ -100,11 +100,11 @@ export default function Board() {
             ))}
           </div>
         )}
-        {phase === 'window' && myTeam && <p className="small" style={{ marginTop: 10 }}>Trade window is open until {fmtET(week.show_lock_at)}. <a href="#power">Use a power play</a> if you dare.</p>}
+        {phase === 'window' && myTeam && <p className="small" style={{ marginTop: 10 }}>Snipe window is open until {fmtET(week.show_lock_at)}. <a href="#power">Use yours</a> if you dare.</p>}
       </section>
 
       <section className="card">
-        <h2>Power play wire</h2>
+        <h2>Snipe wire</h2>
         <PowerPlayFeed powerPlays={powerPlays} teamById={teamById} coupleById={coupleById} weeks={weeks} />
       </section>
     </div>
@@ -121,12 +121,9 @@ export function PowerPlayFeed({ powerPlays, teamById, coupleById, weeks }) {
         const me = teamById[x.team_id], them = teamById[x.target_team_id]
         return (
           <li key={x.id} className="row" style={{ gap: 8 }}>
-            <span className={`pill ${x.kind === 'snipe' ? 'pink' : 'gold'}`}>{x.kind === 'snipe' ? '🎯 Snipe' : '🚩 Illegal lift'}</span>
+            <span className="pill pink">🎯 Snipe</span>
             <span className="small">
-              <b>{wk[x.week_id].title}:</b> {me?.emoji} {me?.name}{' '}
-              {x.kind === 'snipe'
-                ? <>took <b>{coupleById[x.take_couple_id]?.celeb}</b> from {them?.emoji} {them?.name} and stuck them with <b>{coupleById[x.give_couple_id]?.celeb}</b></>
-                : <>flagged {them?.emoji} {them?.name} for an illegal lift. Minus three. Carrie Ann would be proud.</>}
+              <b>{wk[x.week_id].title}:</b> {me?.emoji} {me?.name} took <b>{coupleById[x.take_couple_id]?.celeb}</b> from {them?.emoji} {them?.name} and stuck them with <b>{coupleById[x.give_couple_id]?.celeb}</b>
             </span>
           </li>
         )

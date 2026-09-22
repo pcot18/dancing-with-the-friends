@@ -11,7 +11,7 @@ import Commish from './screens/Commish.jsx'
 import Login from './screens/Login.jsx'
 import JoinLeague from './screens/JoinLeague.jsx'
 
-const TABS = [['board', 'Board'], ['draft', 'Draft Room'], ['power', 'Power Plays'], ['cast', 'Cast'], ['recap', 'Recaps']]
+const TABS = [['board', 'Board'], ['draft', 'Draft Room'], ['power', 'Snipe'], ['cast', 'Cast'], ['recap', 'Recaps']]
 
 function tabFromHash() { return (location.hash.replace('#', '') || 'board').split('/')[0] }
 
@@ -74,7 +74,7 @@ export default function App() {
     `${leagueData.league.name}`,
     leader ? `LEADER ${leader.team.emoji} ${leader.team.name} · ${fmtPts(leader.total)} pts` : 'No scores yet',
     ...standings.ranked.slice(1).map(l => `${l.team.emoji} ${l.team.name} −${fmtPts(l.behind)}`),
-    weekInfo.phase === 'pre' ? `${weekInfo.week.title.toUpperCase()} DRAFT ${new Date(weekInfo.week.draft_opens_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', timeZone: 'America/New_York' })} ET` : weekInfo.phase === 'drafting' ? `DRAFT IN PROGRESS · ${weekInfo.week.title}` : weekInfo.phase === 'window' ? `TRADE WINDOW OPEN · ${weekInfo.week.title}` : `${weekInfo.week.title} · LIVE`,
+    weekInfo.phase === 'pre' ? `${weekInfo.week.title.toUpperCase()} DRAFT ${new Date(weekInfo.week.draft_opens_at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET` : weekInfo.phase === 'drafting' ? `DRAFT IN PROGRESS · ${weekInfo.week.title}` : weekInfo.phase === 'window' ? `SNIPE WINDOW OPEN · ${weekInfo.week.title}` : `${weekInfo.week.title} · LIVE`,
     `${season.couples.filter(c => !c.eliminated_week).length} couples still dancing`,
     api.isDemo ? 'DEMO MODE · fake scores, fake friends, real feelings' : '',
   ].filter(Boolean)

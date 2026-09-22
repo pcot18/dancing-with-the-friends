@@ -1,4 +1,5 @@
 -- Dancing with the Friends — schema, security, live draft, power plays.
+-- Auth is Supabase email + password with auto-confirm (set in the project's auth config).
 -- Run this in the Supabase SQL editor (or `supabase db push`), then run seed.sql.
 
 -- ---------------------------------------------------------------------------
@@ -87,9 +88,7 @@ create table leagues (
     "elimination_multiplier": 0.5,
     "ride_or_die_weekly": 2,
     "ride_or_die_winner": 20,
-    "lift_penalty": 3,
-    "snipes_per_season": 1,
-    "lifts_per_season": 1
+    "snipes_per_season": 1
   }'::jsonb
 );
 
@@ -141,7 +140,7 @@ create table power_plays (
   id               uuid primary key default gen_random_uuid(),
   team_id          uuid references teams on delete cascade,
   week_id          int references weeks on delete cascade,
-  kind             text not null check (kind in ('snipe', 'lift')),
+  kind             text not null check (kind = 'snipe'),
   target_team_id   uuid references teams,
   give_couple_id   int references couples,
   take_couple_id   int references couples,
@@ -202,7 +201,7 @@ language sql stable set search_path = public as $$
   cross join lg;
 $$;
 
--- Season totals per team: picks + ride-or-die + lift penalties.
+-- Season totals per team: picks + ride-or-die.
 create or replace function league_totals(p_league uuid, p_through_week int default 999)
 returns table (team_id uuid, total numeric, weekly_wins int)
 language sql stable set search_path = public as $$
@@ -213,18 +212,14 @@ language sql stable set search_path = public as $$
     from league_pick_points(p_league) pp join wk on wk.id = pp.week_id
     group by pp.team_id, pp.week_id
   ),
-  lift_pts as (
-    select x.target_team_id as team_id, x.week_id,
-           -(lg.settings->>'lift_penalty')::numeric as pts
-    from power_plays x join teams t on t.id = x.team_id and t.league_id = p_league
-    join wk on wk.id = x.week_id cross join lg
-    where x.kind = 'lift'
+  drafted as (   -- weeks this league actually played
+    select distinct p.week_id from picks p join teams t on t.id = p.team_id where t.league_id = p_league
   ),
   rod_pts as (
     select t.id as team_id, s.week_id,
       (lg.settings->>'ride_or_die_weekly')::numeric as pts
     from teams t join scores s on s.couple_id = t.ride_or_die
-    join wk on wk.id = s.week_id cross join lg
+    join wk on wk.id = s.week_id join drafted d on d.week_id = s.week_id cross join lg
     where t.league_id = p_league and not s.eliminated
   ),
   winner_pts as (
@@ -235,7 +230,7 @@ language sql stable set search_path = public as $$
   ),
   week_pts as (
     select team_id, week_id, sum(pts) as pts from (
-      select * from pick_pts union all select * from lift_pts union all select * from rod_pts
+      select * from pick_pts union all select * from rod_pts
     ) u group by team_id, week_id
   ),
   wins as (
@@ -417,27 +412,6 @@ begin
   update picks set team_id = me, sniped = true where team_id = p_target_team and week_id = p_week and couple_id = p_take;
   insert into power_plays (team_id, week_id, kind, target_team_id, give_couple_id, take_couple_id)
   values (me, p_week, 'snipe', p_target_team, p_give, p_take);
-end $$;
-
--- ILLEGAL LIFT: Carrie Ann's favorite. Once per season, flag a rival for an illegal
--- lift and dock them 3 points that week. Declared before show lock; revealed at lock.
-create or replace function use_lift(p_week int, p_target_team uuid)
-returns void language plpgsql security definer set search_path = public as $$
-declare
-  me uuid; lg uuid; w weeks%rowtype; used int; allowed int;
-begin
-  select * into w from weeks where id = p_week;
-  select league_id into lg from teams where id = p_target_team;
-  me := my_team_in_league(lg);
-  if me is null then raise exception 'You are not on a team in this league'; end if;
-  if me = p_target_team then raise exception 'You cannot flag yourself'; end if;
-  if now() >= w.show_lock_at then raise exception 'Too late — the show is live'; end if;
-  select (settings->>'lifts_per_season')::int into allowed from leagues where id = lg;
-  select count(*) into used from power_plays where team_id = me and kind = 'lift';
-  if used >= allowed then raise exception 'No illegal-lift flags left this season'; end if;
-  if exists (select 1 from power_plays where week_id = p_week and kind = 'lift' and target_team_id = p_target_team)
-    then raise exception 'That team has already been flagged this week'; end if;
-  insert into power_plays (team_id, week_id, kind, target_team_id) values (me, p_week, 'lift', p_target_team);
 end $$;
 
 -- ---------------------------------------------------------------------------

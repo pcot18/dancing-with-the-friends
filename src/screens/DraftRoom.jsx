@@ -116,7 +116,7 @@ export default function DraftRoom() {
                   const p = weekPicks.find(x => x.pick_number === i + 1)
                   const cur = i === draft.current_index
                   return (
-                    <li key={i} style={{ display: 'grid', gridTemplateColumns: '22px minmax(0, 1fr) minmax(0, 1fr)', gap: 8, alignItems: 'center', padding: '4px 8px', borderRadius: 10, background: cur ? 'var(--pink-soft)' : 'transparent', fontWeight: cur ? 800 : 400 }}>
+                    <li key={i} style={{ display: 'grid', gridTemplateColumns: '22px minmax(0, 1.4fr) minmax(0, 1fr)', gap: 8, alignItems: 'center', padding: '4px 8px', borderRadius: 10, background: cur ? 'var(--pink-soft)' : 'transparent', fontWeight: cur ? 800 : 400 }}>
                       <span className="mono small muted">{i + 1}</span>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{teamById[tid]?.emoji} {teamById[tid]?.name}</span>
                       <span className="small" style={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p ? <>{coupleById[p.couple_id]?.celeb}{p.auto && ' 🎲'}</> : cur ? '⏱' : ''}</span>
@@ -135,7 +135,7 @@ export default function DraftRoom() {
         <section className="hero">
           <div className="eyebrow">{week.title} · Draft complete</div>
           <h1>Rosters are set</h1>
-          <p style={{ margin: 0 }}>{phase === 'window' ? <>The trade window is open until {fmtET(week.show_lock_at)}. <a href="#power">Power plays</a> are live.</> : 'Locked for the show.'}</p>
+          <p style={{ margin: 0 }}>{phase === 'window' ? <>The snipe window is open until {fmtET(week.show_lock_at)}. <a href="#power">Snipes</a> are live.</> : 'Locked for the show.'}</p>
         </section>
       )}
 
@@ -182,9 +182,8 @@ function Clock({ secs, total, urgent }) {
 }
 
 function RideOrDie() {
-  const { api, couples, teams, myTeam, weeks, now, reload, showToast, league } = useData()
-  const week1 = weeks[0]
-  const open = now.getTime() < new Date(week1.draft_opens_at).getTime()
+  const { api, couples, teams, myTeam, drafts, reload, showToast, league } = useData()
+  const open = (drafts || []).length === 0   // claimable until the league's first draft starts
   const taken = Object.fromEntries(teams.filter(t => t.ride_or_die).map(t => [t.ride_or_die, t]))
   const mine = couples.find(c => c.id === myTeam?.ride_or_die)
   const [choice, setChoice] = useState('')
@@ -209,7 +208,7 @@ function RideOrDie() {
             {couples.map(c => <option key={c.id} value={c.id} disabled={!!taken[c.id]}>{c.celeb} & {c.pro}{taken[c.id] ? ` — taken by ${taken[c.id].name}` : ''}</option>)}
           </select>
           <button className="btn small blue" disabled={!choice} onClick={claim}>Claim</button>
-          <span className="small muted">One per team, first come first served, closes when the week 1 room opens.</span>
+          <span className="small muted">One per team, first come first served, closes the moment your league's first draft starts.</span>
         </div>
       )}
     </section>

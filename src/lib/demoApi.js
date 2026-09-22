@@ -1,10 +1,10 @@
 // In-memory backend with a plausible mid-season snapshot. No network, no login.
-// Pretend it's Tuesday Oct 6, 2026, 7:02pm ET: the week 4 draft room just opened, the show is
-// at 8, and you're on the clock. The other teams are bots (one of them "isn't here").
-import { SEASON, WEEKS, COUPLES, weekLocks } from '../data/cast.js'
+// Real season state (weeks 1–2 scored, two couples gone), pretend it's tonight 7:32pm ET: the
+// draft room just opened and you're on the clock. The other teams are bots (one "isn't here").
+import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
 import { DEFAULT_SETTINGS, draftOrder, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const DEMO_BASE = new Date('2026-10-06T23:02:00Z').getTime()
+const DEMO_BASE = new Date('2026-09-22T23:32:00Z').getTime()
 const LOADED = Date.now()
 const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
 const NOW = new Date(DEMO_BASE)
@@ -14,9 +14,9 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 10139
 
 const state = {
   season: { ...SEASON, winner_couple_id: null, is_current: true },
-  couples: COUPLES.map(c => ({ ...c, season_id: SEASON.id, eliminated_week: null })),
+  couples: COUPLES.map(c => ({ ...c, season_id: SEASON.id, eliminated_week: c.eliminated_week ?? null })),
   weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: 3, ...weekLocks(w) })),
-  scores: [],
+  scores: SCORES.map(x => ({ week_id: x.week, couple_id: x.couple, raw_total: x.total, max_possible: 30, eliminated: !!x.eliminated })),
   league: { id: 'demo-league', season_id: SEASON.id, name: 'Tuesday Night Ballroom Crimes', invite_code: 'SEQUIN', commissioner: ME, settings: { ...DEFAULT_SETTINGS } },
   teams: [
     { id: 't1', league_id: 'demo-league', name: 'The Paso Dobros', emoji: '🕺', ride_or_die: 6, draft_seed: 3 },
@@ -36,16 +36,6 @@ const state = {
 }
 const listeners = new Set()
 const emit = () => listeners.forEach(cb => { try { cb() } catch {} })
-
-const rand = rng(35)
-
-function fakeScore(c, week) {
-  const spread = c.ceiling - c.floor
-  const base = c.floor + spread * (0.35 + 0.08 * week.number) + (rand() - 0.5) * spread * 0.5
-  const dances = week.number === 1 ? 2 : 1
-  const perDance = Math.max(12, Math.min(30, Math.round(base)))
-  return { raw_total: perDance * dances, max_possible: 30 * dances }
-}
 
 const standingsInput = () => ({ season: state.season, league: state.league, teams: state.teams, weeks: state.weeks, scores: state.scores, picks: state.picks, powerPlays: state.powerPlays, couples: state.couples })
 const alive = () => state.couples.filter(c => c.eliminated_week == null).map(c => c.id)
@@ -79,33 +69,14 @@ function botChoice(d, seed) {
   return pool.map(c => ({ c, k: (c.floor + c.ceiling) / 2 + (r() - 0.5) * 10 })).sort((a, b) => b.k - a.k)[0].c.id
 }
 
-// --- weeks 1–3: drafted and scored instantly -----------------------------------
-const eliminations = { 2: [16], 3: [15] }   // Giada goes week 2, Sarah Jane week 3
-for (const week of state.weeks.filter(w => w.number <= 3)) {
-  const d = openDraft(week)
-  let i = 0
-  while (d.status === 'live') applyPick(d, botChoice(d, week.number * 100 + i++), false)
-  const elim = eliminations[week.number] || []
-  for (const c of state.couples.filter(c => c.eliminated_week == null)) state.scores.push({ week_id: week.id, couple_id: c.id, ...fakeScore(c, week), eliminated: elim.includes(c.id) })
-  for (const id of elim) state.couples.find(c => c.id === id).eliminated_week = week.number
-}
-// a couple of power plays already spent, for flavor
-state.powerPlays.push({ id: 'pp1', team_id: 't2', week_id: 2, kind: 'lift', target_team_id: 't3', created_at: NOW.toISOString() })
-{
-  // t4 sniped t3 in week 3: swap the first pick of each
-  const a = state.picks.find(p => p.week_id === 3 && p.team_id === 't4')
-  const b = state.picks.find(p => p.week_id === 3 && p.team_id === 't3')
-  const ac = a.couple_id; a.couple_id = b.couple_id; b.couple_id = ac; a.sniped = b.sniped = true
-  state.powerPlays.push({ id: 'pp2', team_id: 't4', week_id: 3, kind: 'snipe', target_team_id: 't3', give_couple_id: b.couple_id, take_couple_id: a.couple_id, created_at: NOW.toISOString() })
-}
-
-// --- week 4: the room is open, you're on the clock -----------------------------
+// --- tonight: the room is open, you're on the clock ------------------------------
 const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
-openDraft(state.weeks[3])
+const LIVE_WEEK = state.weeks.find(w => w.number === 3)
+openDraft(LIVE_WEEK)
 let botTimer = null
 function scheduleBots() {
   clearTimeout(botTimer)
-  const d = state.drafts.find(x => x.week_id === 4)
+  const d = state.drafts.find(x => x.week_id === LIVE_WEEK.id)
   if (!d || d.status !== 'live') return
   const onClock = drafterAt(d.order_ids, d.current_index, d.crunch)
   if (onClock === 't1' || onClock === ABSENT) return   // you, or the empty chair
@@ -161,12 +132,6 @@ export const demoApi = {
     if (!a || !b) throw new Error('That couple is not available to snipe')
     a.team_id = target_team; a.sniped = true; b.team_id = me.id; b.sniped = true
     state.powerPlays.push({ id: 'pp' + Date.now(), team_id: me.id, week_id, kind: 'snipe', target_team_id: target_team, give_couple_id: give, take_couple_id: take, created_at: NOW.toISOString() })
-  },
-  async useLift(week_id, target_team) {
-    await wait()
-    const me = state.teams[0]
-    if (state.powerPlays.some(p => p.team_id === me.id && p.kind === 'lift')) throw new Error('No illegal-lift flags left this season')
-    state.powerPlays.push({ id: 'pp' + Date.now(), team_id: me.id, week_id, kind: 'lift', target_team_id: target_team, created_at: NOW.toISOString() })
   },
   async saveScores(week, rows, eliminatedIds) {
     await wait()

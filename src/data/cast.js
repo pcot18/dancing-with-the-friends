@@ -3,31 +3,43 @@
 
 export const SEASON = { id: 1, name: 'Season 35', year: 2026 }
 
-// Premiere Tue Sept 15 2026. Live draft room opens Tuesday 7pm ET; show lock Tuesday 8pm ET.
+// Week numbering follows Wikipedia's scoring chart (premiere night 1 = week 1, night 2 = week 2),
+// so the auto-fill parser lines up. Live draft room opens Tuesday 7:30pm ET; show lock 8pm ET.
 export const WEEKS = [
-  { number: 1,  title: 'Premiere',       tuesday: '2026-09-15' },
-  { number: 2,  title: 'Week 2',         tuesday: '2026-09-22' },
-  { number: 3,  title: 'Week 3',         tuesday: '2026-09-29' },
-  { number: 4,  title: 'Week 4',         tuesday: '2026-10-06' },
-  { number: 5,  title: 'Week 5',         tuesday: '2026-10-13' },
-  { number: 6,  title: 'Week 6',         tuesday: '2026-10-20' },
-  { number: 7,  title: 'Week 7',         tuesday: '2026-10-27' },
-  { number: 8,  title: 'Week 8',         tuesday: '2026-11-03' },
-  { number: 9,  title: 'Week 9',         tuesday: '2026-11-10' },
-  { number: 10, title: 'Semifinal',      tuesday: '2026-11-17' },
-  { number: 11, title: 'Finale',         tuesday: '2026-11-24' },
+  { number: 1,  title: 'Premiere Night 1',  tuesday: '2026-09-15' },
+  { number: 2,  title: 'Premiere Night 2',  tuesday: '2026-09-16' },
+  { number: 3,  title: 'Viral Hits Night',  tuesday: '2026-09-22' },
+  { number: 4,  title: 'Yacht Rock Night',  tuesday: '2026-09-29' },
+  { number: 5,  title: 'Week 5',            tuesday: '2026-10-06' },
+  { number: 6,  title: 'Week 6',            tuesday: '2026-10-13' },
+  { number: 7,  title: 'Week 7',            tuesday: '2026-10-20' },
+  { number: 8,  title: 'Week 8',            tuesday: '2026-10-27' },
+  { number: 9,  title: 'Week 9',            tuesday: '2026-11-03' },
+  { number: 10, title: 'Week 10',           tuesday: '2026-11-10' },
+  { number: 11, title: 'Semifinal',         tuesday: '2026-11-17' },
+  { number: 12, title: 'Finale',            tuesday: '2026-11-24' },
 ]
 
 // ET offset: EDT (-4) until Nov 1 2026, EST (-5) after.
-export function etToUtc(dateStr, hour) {
+export function etToUtc(dateStr, hour, minute = 0) {
   const offset = dateStr >= '2026-11-01' ? 5 : 4
   const d = new Date(`${dateStr}T00:00:00Z`)
-  d.setUTCHours(hour + offset)
+  d.setUTCHours(hour + offset, minute)
   return d.toISOString()
 }
 export function weekLocks(w) {
-  return { draft_opens_at: etToUtc(w.tuesday, 19), show_lock_at: etToUtc(w.tuesday, 20) }
+  return { draft_opens_at: etToUtc(w.tuesday, 19, 30), show_lock_at: etToUtc(w.tuesday, 20) }
 }
+
+// Real judges' scores so far (3 judges, /30). Premiere: men night 1, women night 2, one elimination each.
+export const SCORES = [
+  { week: 1, couple: 7,  total: 15 }, { week: 1, couple: 9,  total: 17 }, { week: 1, couple: 8,  total: 12, eliminated: true },
+  { week: 1, couple: 11, total: 10 }, { week: 1, couple: 6,  total: 20 }, { week: 1, couple: 13, total: 16 },
+  { week: 1, couple: 10, total: 16 }, { week: 1, couple: 2,  total: 21 },
+  { week: 2, couple: 4,  total: 12 }, { week: 2, couple: 3,  total: 18 }, { week: 2, couple: 14, total: 15 },
+  { week: 2, couple: 16, total: 16 }, { week: 2, couple: 5,  total: 18 }, { week: 2, couple: 12, total: 21 },
+  { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
+]
 
 export const COUPLES = [
   { id: 1, celeb: 'Jenna Dewan', pro: 'Val Chmerkovskiy', known_for: 'Step Up, The Rookie', tier: 1,
@@ -65,7 +77,7 @@ export const COUPLES = [
     comp: 'Ilona Maher, S33 runner-up', vote_engine: 'Savannah Bananas social media, which is enormous',
     bio: "Plays for the Savannah Bananas, a baseball team whose entire business model is choreographed dance breaks between innings. So: a professional athlete with hundreds of reps performing rehearsed routines in sold-out stadiums, plus a following that already knows how to vote on their phones. Emma Slater has a Mirrorball and a reputation for making big guys look light.",
     red_flag: 'Banana Ball choreography is 40% hip thrust. The paso doble is not.' },
-  { id: 8, celeb: 'Conner Leavitt', pro: 'Adele Zaikman', known_for: 'The Secret Lives of Mormon Wives', tier: 2,
+  { id: 8, celeb: 'Conner Leavitt', pro: 'Adele Zaikman', known_for: 'The Secret Lives of Mormon Wives', tier: 2, eliminated_week: 1,
     position: 'The sequel, in a good way', grade: 'B', floor: 17, ceiling: 27,
     comp: 'His wife, one season ago', vote_engine: 'The entire Mormon Wives audience, redirected',
     bio: "Whitney Leavitt went deep in season 34; now the \"Instagram husband\" gets his turn. Except he isn't just a plus-one: he made his off-Broadway debut in May, so there's stage training. Partnered with Adele Zaikman, the rookie pro who won The Next Pro and will be dancing like her contract depends on it. He also has a live-in coach who knows what Carrie Ann is going to say before she says it.",
@@ -100,7 +112,7 @@ export const COUPLES = [
     comp: 'Ariana Madix, S32 finalist', vote_engine: 'Summer House, plus a 2026 betrayal storyline the internet took personally',
     bio: "Summer House's most influential export, per Bravo, and this year the wronged party in a public ex-and-friend situation that turned a whole fanbase into a voting bloc. The Ariana Madix precedent is instructive: Bravo women with a grievance and a good pro make the finale. Brandon Armstrong has never had a partner with this much narrative wind at her back.",
     red_flag: "It's a nurse's schedule and a Bravo schedule and a DWTS rehearsal schedule. Something's giving." },
-  { id: 15, celeb: 'Sarah Jane Nader', pro: 'Hailey Bills', known_for: 'Love Thy Nader', tier: 3,
+  { id: 15, celeb: 'Sarah Jane Nader', pro: 'Hailey Bills', known_for: 'Love Thy Nader', tier: 3, eliminated_week: 2,
     position: 'Same-sex pairing · rookie pro', grade: 'C', floor: 14, ceiling: 24,
     comp: 'Her sister Brooks, S33, ninth place', vote_engine: 'Love Thy Nader, the Nader sister multiverse',
     bio: "Actress, model, star of Love Thy Nader, and the second Nader sister to enter the ballroom after Brooks went out ninth. The season's same-sex pairing, with Hailey Bills promoted from the ensemble to pro. First-year pros go home early far more often than not, but a same-sex partnership means both dancers can lead and follow, and the choreography can go places the standard pairings can't.",

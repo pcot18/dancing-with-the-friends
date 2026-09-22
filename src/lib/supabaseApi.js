@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.config.js'
+
+const url = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
 export const supabase = url && key ? createClient(url, key) : null
 
 const ok = ({ data, error }) => { if (error) throw new Error(error.message); return data }
@@ -12,8 +14,17 @@ export const supabaseApi = {
 
   auth: {
     async getUser() { const { data } = await supabase.auth.getUser(); return data.user },
-    async signIn(email) {
-      return ok(await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + window.location.pathname } }))
+    // Email + password. If the account doesn't exist yet, it's created on the spot (auto-confirm is on).
+    async signIn(email, password) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (!error) return data
+      if (/invalid login credentials/i.test(error.message)) {
+        const r = await supabase.auth.signUp({ email, password })
+        if (r.error) throw new Error(r.error.message)
+        if (!r.data.session) throw new Error('Account created, but email confirmation is on in Supabase. Turn it off (Auth → Providers → Email → Confirm email) and try again.')
+        return r.data
+      }
+      throw new Error(error.message)
     },
     async signOut() { await supabase.auth.signOut() },
     onChange(cb) { const { data } = supabase.auth.onAuthStateChange((_e, s) => cb(s?.user ?? null)); return () => data.subscription.unsubscribe() },
@@ -70,12 +81,11 @@ export const supabaseApi = {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, cb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'power_plays' }, cb)
       .subscribe()
-    const poll = setInterval(cb, 4000)   // belt and braces: realtime can drop on phones
+    const poll = setInterval(cb, 2500)   // belt and braces: realtime can drop on phones (and on brand-new projects)
     return () => { clearInterval(poll); supabase.removeChannel(ch) }
   },
   async updateTeam(teamId, patch) { return ok(await supabase.from('teams').update(patch).eq('id', teamId)) },
   async useSnipe(week_id, target_team, give, take) { return ok(await supabase.rpc('use_snipe', { p_week: week_id, p_target_team: target_team, p_give: give, p_take: take })) },
-  async useLift(week_id, target_team) { return ok(await supabase.rpc('use_lift', { p_week: week_id, p_target_team: target_team })) },
 
   async saveScores(week, rows, eliminatedIds) {
     ok(await supabase.from('scores').upsert(rows.map(r => ({ ...r, week_id: week.id }))))

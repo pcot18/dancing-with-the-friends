@@ -5,9 +5,7 @@ export const DEFAULT_SETTINGS = {
   elimination_multiplier: 0.5,
   ride_or_die_weekly: 2,
   ride_or_die_winner: 20,
-  lift_penalty: 3,
   snipes_per_season: 1,
-  lifts_per_season: 1,
 }
 
 export function normalizeScore(score, week) {
@@ -18,7 +16,7 @@ export function normalizeScore(score, week) {
 /**
  * @returns {{ teams: Record<teamId, TeamLine>, ranked: TeamLine[], weeksScored: number[] }}
  * TeamLine = { team, total, weeklyWins, rod, weeks: { [weekId]: WeekLine } }
- * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], lift, rod, won }
+ * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], rod, won }
  */
 export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
@@ -26,7 +24,10 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
   const scoreKey = (w, c) => `${w}:${c}`
   const scoreMap = Object.fromEntries(scores.map(s => [scoreKey(s.week_id, s.couple_id), s]))
-  const weeksScored = [...new Set(scores.map(s => s.week_id))].sort((a, b) => weekById[a].number - weekById[b].number)
+  // Weeks that count for this league: scored AND the league drafted them (a league that joins mid-season
+  // doesn't earn Ride or Die points, or weekly wins, for weeks it wasn't playing).
+  const drafted = new Set(picks.map(p => p.week_id))
+  const weeksScored = [...new Set(scores.map(s => s.week_id))].filter(w => drafted.has(w)).sort((a, b) => weekById[a].number - weekById[b].number)
 
   // owners per (week, couple) for crunch-time splits
   const ownerCount = {}
@@ -38,7 +39,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
   const lines = {}
   for (const t of teams) {
     lines[t.id] = { team: t, total: 0, weeklyWins: 0, rod: 0, weeks: {} }
-    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], lift: 0, rod: 0, won: false }
+    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], rod: 0, won: false }
   }
 
   for (const p of picks) {
@@ -58,13 +59,6 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     line.weeks[p.week_id].picks.push(entry)
   }
 
-  for (const x of powerPlays || []) {
-    if (x.kind === 'lift' && lines[x.target_team_id] && weeksScored.includes(x.week_id)) {
-      lines[x.target_team_id].weeks[x.week_id].lift -= settings.lift_penalty
-      lines[x.target_team_id].weeks[x.week_id].points -= settings.lift_penalty
-    }
-  }
-
   for (const t of teams) {
     const line = lines[t.id]
     if (t.ride_or_die) {
@@ -82,7 +76,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     }
     for (const w of weeks) line.weeks[w.id].points = Math.round(line.weeks[w.id].points * 100) / 100
     line.total = Math.round((Object.values(line.weeks).reduce((a, w) => a + w.points, 0)
-      + (season?.winner_couple_id === t.ride_or_die ? settings.ride_or_die_winner : 0)) * 100) / 100
+      + (t.ride_or_die && season?.winner_couple_id === t.ride_or_die ? settings.ride_or_die_winner : 0)) * 100) / 100
   }
 
   // weekly wins

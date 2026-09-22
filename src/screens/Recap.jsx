@@ -42,7 +42,6 @@ export default function Recap() {
                   </tr>
                 ))}
                 {w.rod !== 0 && <tr><td colSpan={2} className="small muted">💍 Ride or Die survived</td><td className="num">+{w.rod}</td></tr>}
-                {w.lift !== 0 && <tr><td colSpan={2} className="small" style={{ color: 'var(--bad)' }}>🚩 Flagged for an illegal lift</td><td className="num" style={{ color: 'var(--bad)' }}>{w.lift}</td></tr>}
               </tbody>
             </table>
           </section>
@@ -58,7 +57,7 @@ export default function Recap() {
           })}</tbody>
         </table></div>
       </section>
-      <section className="card"><h3>Power plays this week</h3><PowerPlayFeed powerPlays={powerPlays.filter(x => x.week_id === sel)} teamById={teamById} coupleById={coupleById} weeks={weeks} /></section>
+      <section className="card"><h3>Snipes this week</h3><PowerPlayFeed powerPlays={powerPlays.filter(x => x.week_id === sel)} teamById={teamById} coupleById={coupleById} weeks={weeks} /></section>
     </div>
   )
 }
