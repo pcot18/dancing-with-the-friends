@@ -27,6 +27,8 @@ export const supabaseApi = {
       throw new Error(error.message)
     },
     async signOut() { await supabase.auth.signOut() },
+    async updatePassword(password) { return ok(await supabase.auth.updateUser({ password })) },
+    async updateEmail(email) { return ok(await supabase.auth.updateUser({ email })) },
     onChange(cb) { const { data } = supabase.auth.onAuthStateChange((_e, s) => cb(s?.user ?? null)); return () => data.subscription.unsubscribe() },
   },
 
@@ -93,7 +95,6 @@ export const supabaseApi = {
     ok(await supabase.from('couples').update({ eliminated_week: null }).eq('eliminated_week', week.number))
     if (eliminatedIds.length) ok(await supabase.from('couples').update({ eliminated_week: week.number }).in('id', eliminatedIds))
   },
-  async setWinner(seasonId, coupleId) { return ok(await supabase.from('seasons').update({ winner_couple_id: coupleId }).eq('id', seasonId)) },
 
   async createLeague(name, teamName, emoji) { return ok(await supabase.rpc('create_league', { p_name: name, p_team_name: teamName, p_emoji: emoji })) },
   async teamsForCode(code) { return ok(await supabase.rpc('teams_for_code', { p_code: code })) },

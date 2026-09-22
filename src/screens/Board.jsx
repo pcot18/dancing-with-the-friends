@@ -66,7 +66,7 @@ export default function Board() {
               </tbody>
             </table>
           </div>
-          <p className="small muted" style={{ marginTop: 10 }}>Tiebreakers: weekly wins, then Ride or Die points. 🪩 = won the week.</p>
+          <p className="small muted" style={{ marginTop: 10 }}>Tiebreaker: weekly wins. 🪩 = won the week.</p>
         </section>
 
         <section className="card">

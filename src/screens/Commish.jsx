@@ -107,14 +107,6 @@ export default function Commish() {
           <h3>Draft controls</h3>
           <p className="small muted">The live draft runs in the <a href="#draft">Draft Room</a>: you open it (any time; friends can open it themselves once it's {fmtET(week.draft_opens_at)}), 60 seconds a pick, random auto-pick on a missed turn. A do-over button lives at the bottom of the Draft Room.</p>
         </section>
-        <section className="card">
-          <h3>Crown the champion</h3>
-          <p className="small muted">After the finale, set the Mirrorball winner so Ride or Die bonuses pay out.</p>
-          <select disabled={!canScore} value={season.winner_couple_id || ''} onChange={async e => { await api.setWinner(season.id, Number(e.target.value) || null); showToast('Winner set. Confetti implied.'); reload() }} aria-label="Winner">
-            <option value="">Season still going…</option>
-            {couples.map(c => <option key={c.id} value={c.id}>{c.celeb} & {c.pro}</option>)}
-          </select>
-        </section>
       </div>
 
       <section className="card">

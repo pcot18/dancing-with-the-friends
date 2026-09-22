@@ -41,7 +41,6 @@ export default function Recap() {
                     <td className="num"><b>{fmtPts(p.adj)}</b></td>
                   </tr>
                 ))}
-                {w.rod !== 0 && <tr><td colSpan={2} className="small muted">💍 Ride or Die survived</td><td className="num">+{w.rod}</td></tr>}
               </tbody>
             </table>
           </section>

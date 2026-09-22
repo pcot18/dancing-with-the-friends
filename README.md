@@ -14,10 +14,9 @@ Static React app on GitHub Pages, Supabase for login and data. Costs nothing to 
 - **Draft order.** Week 1 random, then reverse standings (last place picks first).
 - **Snipe window.** From the last pick until **Tuesday 8pm ET** (show lock). A snipe made in the window is hidden until show lock, then revealed on the Board.
 - **Scoring.** Sum of your drafted couples' judges' scores, normalized to a 3-judge / 30-point-per-dance basis. Multi-dance nights count every dance. **Sent home = half points.**
-- **Ride or Die.** One exclusive season-long couple per team, claimed before the week 1 draft room opens. +2 every week they survive, +20 if they win the Mirrorball.
 - **Crunch time.** The first week there are fewer couples than teams, everyone picks exactly one, duplicates allowed, points split among owners.
 - **The Snipe** (one per team per season): during the snipe window, hand a rival one of your drafted couples and take one of theirs. Sniped couples can't be sniped back that week.
-- **Standings.** Season points, then weekly wins, then Ride or Die points.
+- **Standings.** Season points, then weekly wins.
 
 All the numbers live in `leagues.settings` (JSON) so a league can change them.
 
@@ -39,12 +38,12 @@ To rebuild from scratch on a new project: run `supabase/migrations/*.sql` in ord
 No secrets needed: the Supabase URL and anon key are committed in `src/supabase.config.js`. The anon key is public by design; Row Level Security is what keeps people from picking on someone else's turn.
 
 ### Start the league
-Open the site, sign in (any email + a 6+ character password; the account is created on the spot), **Start a league**, and text the invite code. Friends sign in the same way, enter the code, and either join an existing team (couples) or make a new one. Two people on a team can share one login or each make their own; both work. Everyone claims a Ride or Die before the first draft room opens.
+Open the site, sign in (any email + a 6+ character password; the account is created on the spot), **Start a league**, and text the invite code. Friends sign in the same way, enter the code, and either join an existing team (couples) or make a new one. Two people on a team can share one login or each make their own; both work. Team name, emoji, display name, password and email are all editable under the ⚙️ tab.
 
 ## Weekly commissioner routine
 1. Tuesday ~7:30pm: open the Draft Room (or let the friends do it at 7:30). Draft happens. Snipe window until 8.
 2. After the show (or Wednesday morning): **Commish → Judges' scores** → pick the week → **Auto-fill from Wikipedia** → tick who went home → Save.
-3. That's it. Standings, recaps, draft order for next week, and Ride or Die bonuses all update.
+3. That's it. Standings, recaps and next week's draft order all update.
 
 **About auto-fill:** there is no official DWTS scores API. The button reads the "Scoring chart" table on the season's Wikipedia page through the MediaWiki API (which allows anonymous cross-origin requests), matches rows to couples by first names, and pre-fills the totals for you to check. Wikipedia editors usually have it within an hour of the show. If the table format changes and the parser can't find it, you get an error and type the numbers by hand (it's 16 numbers, two minutes). Eliminations always need a manual tick because Wikipedia encodes them as cell colors that aren't worth trusting.
 
@@ -61,7 +60,7 @@ The cast and scouting reports are in `src/data/cast.js`; `node scripts/gen-seed.
 ```
 src/
   App.jsx               shell, auth gate, league gate, tabs, ticker
-  screens/              Board, DraftRoom, PowerPlays (the Snipe), Cast, Recap, Commish, Login, JoinLeague
+  screens/              Board, DraftRoom, PowerPlays (the Snipe), Cast, Recap, Commish, Settings, Login, JoinLeague
   supabase.config.js    project URL + anon key
   lib/scoring.js        scoring engine (mirrors the SQL functions)
   lib/supabaseApi.js    real backend
@@ -69,7 +68,7 @@ src/
   lib/wikipedia.js      score auto-fill
   data/cast.js          Season 35 cast + scouting copy
 supabase/
-  migrations/               0001 schema, RLS, live-draft + snipe RPCs, pg_cron, realtime · 0002 first-user-is-admin
+  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired
   seed.sql                     generated from src/data/cast.js
 ```
 

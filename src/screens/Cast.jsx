@@ -5,7 +5,6 @@ export default function Cast() {
   const { couples, scores, weeks, teams, picks } = useData()
   const avg = (c) => { const ss = scores.filter(s => s.couple_id === c.id); return ss.length ? ss.reduce((a, s) => a + Number(s.raw_total) * 30 / Number(s.max_possible), 0) / ss.length : null }
   const last = (c) => { const ss = scores.filter(s => s.couple_id === c.id).sort((a, b) => b.week_id - a.week_id); return ss[0] ? Number(ss[0].raw_total) * 30 / Number(ss[0].max_possible) : null }
-  const rodBy = Object.fromEntries(teams.filter(t => t.ride_or_die).map(t => [t.ride_or_die, t]))
   const tiers = [1, 2, 3]
   return (
     <div className="stack" style={{ gap: 24 }}>
@@ -32,7 +31,6 @@ export default function Cast() {
                     </div>
                     <div className="row" style={{ gap: 6 }}>
                       {c.eliminated_week ? <span className="pill out">Out wk {c.eliminated_week}</span> : <span className="pill blue">Dancing</span>}
-                      {rodBy[c.id] && <span className="pill gold" title={`${rodBy[c.id].name}'s Ride or Die`}>💍 {rodBy[c.id].emoji}</span>}
                     </div>
                   </div>
                   <div className="eyebrow" style={{ color: 'var(--pink-deep)' }}>{c.position}</div>

@@ -10,6 +10,7 @@ import Recap from './screens/Recap.jsx'
 import Commish from './screens/Commish.jsx'
 import Login from './screens/Login.jsx'
 import JoinLeague from './screens/JoinLeague.jsx'
+import Settings from './screens/Settings.jsx'
 
 const TABS = [['board', 'Board'], ['draft', 'Draft Room'], ['power', 'Snipe'], ['cast', 'Cast'], ['recap', 'Recaps']]
 
@@ -79,7 +80,7 @@ export default function App() {
     api.isDemo ? 'DEMO MODE · fake scores, fake friends, real feelings' : '',
   ].filter(Boolean)
 
-  const Screen = { board: Board, draft: DraftRoom, picks: DraftRoom, power: PowerPlays, cast: Cast, recap: Recap, commish: Commish }[tab] || Board
+  const Screen = { board: Board, draft: DraftRoom, picks: DraftRoom, power: PowerPlays, settings: Settings, cast: Cast, recap: Recap, commish: Commish }[tab] || Board
 
   return (
     <DataCtx.Provider value={ctx}>
@@ -89,7 +90,7 @@ export default function App() {
           <nav className="tabs" aria-label="Sections">
             {TABS.map(([k, label]) => <a key={k} href={`#${k}`} className={`tab${tab === k ? ' active' : ''}`} style={{ textDecoration: 'none' }}>{label}</a>)}
             {isCommish && <a href="#commish" className={`tab${tab === 'commish' ? ' active' : ''}`} style={{ textDecoration: 'none' }}>Commish</a>}
-            {!api.isDemo && <button className="tab" onClick={() => api.auth.signOut()}>Sign out</button>}
+            <a href="#settings" className={`tab${tab === 'settings' ? ' active' : ''}`} style={{ textDecoration: 'none' }} title="Settings">⚙️</a>
           </nav>
         </div>
         <div className="ticker" aria-hidden="true"><div className="ticker-inner">{[...tickerItems, ...tickerItems].map((t, i) => <span key={i}><b>◆</b> {t}</span>)}</div></div>

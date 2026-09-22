@@ -47,8 +47,6 @@ export default function DraftRoom() {
 
   return (
     <div className="stack" style={{ gap: 20 }}>
-      <RideOrDie />
-
       {/* ---------- PRE ---------- */}
       {phase === 'pre' && (
         <section className="hero">
@@ -178,39 +176,5 @@ function Clock({ secs, total, urgent }) {
       </svg>
       <div className="display" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: '1.8rem', color: urgent ? 'var(--bad)' : 'var(--ink)' }}>{secs}</div>
     </div>
-  )
-}
-
-function RideOrDie() {
-  const { api, couples, teams, myTeam, drafts, reload, showToast, league } = useData()
-  const open = (drafts || []).length === 0   // claimable until the league's first draft starts
-  const taken = Object.fromEntries(teams.filter(t => t.ride_or_die).map(t => [t.ride_or_die, t]))
-  const mine = couples.find(c => c.id === myTeam?.ride_or_die)
-  const [choice, setChoice] = useState('')
-  if (!myTeam) return null
-  async function claim() {
-    try { await api.updateTeam(myTeam.id, { ride_or_die: Number(choice) }); showToast('Claimed. No takebacks.'); reload() }
-    catch (e) { showToast(/unique|duplicate/i.test(e.message) ? 'Someone claimed them first. Brutal.' : e.message, true) }
-  }
-  if (!mine && !open) return null
-  return (
-    <section className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h3>💍 Ride or Die</h3>
-        <span className="pill gold">+{league.settings?.ride_or_die_weekly ?? 2}/week alive · +{league.settings?.ride_or_die_winner ?? 20} if they win</span>
-      </div>
-      {mine ? (
-        <p>You're riding with <CoupleChip couple={mine} /> {mine.eliminated_week ? <span className="pill out">gone in week {mine.eliminated_week}. RIP.</span> : <span className="muted small">still dancing</span>}</p>
-      ) : (
-        <div className="row">
-          <select value={choice} onChange={e => setChoice(e.target.value)} aria-label="Ride or Die">
-            <option value="">Pick your season-long couple…</option>
-            {couples.map(c => <option key={c.id} value={c.id} disabled={!!taken[c.id]}>{c.celeb} & {c.pro}{taken[c.id] ? ` — taken by ${taken[c.id].name}` : ''}</option>)}
-          </select>
-          <button className="btn small blue" disabled={!choice} onClick={claim}>Claim</button>
-          <span className="small muted">One per team, first come first served, closes the moment your league's first draft starts.</span>
-        </div>
-      )}
-    </section>
   )
 }

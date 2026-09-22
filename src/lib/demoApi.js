@@ -19,10 +19,10 @@ const state = {
   scores: SCORES.map(x => ({ week_id: x.week, couple_id: x.couple, raw_total: x.total, max_possible: 30, eliminated: !!x.eliminated })),
   league: { id: 'demo-league', season_id: SEASON.id, name: 'Tuesday Night Ballroom Crimes', invite_code: 'SEQUIN', commissioner: ME, settings: { ...DEFAULT_SETTINGS } },
   teams: [
-    { id: 't1', league_id: 'demo-league', name: 'The Paso Dobros', emoji: '🕺', ride_or_die: 6, draft_seed: 3 },
-    { id: 't2', league_id: 'demo-league', name: 'Lift Violators', emoji: '🚨', ride_or_die: 11, draft_seed: 1 },
-    { id: 't3', league_id: 'demo-league', name: 'Rhythm & Booze', emoji: '🍸', ride_or_die: 1, draft_seed: 4 },
-    { id: 't4', league_id: 'demo-league', name: 'Mirrorball Mafia', emoji: '🪩', ride_or_die: 3, draft_seed: 2 },
+    { id: 't1', league_id: 'demo-league', name: 'The Paso Dobros', emoji: '🕺', draft_seed: 3 },
+    { id: 't2', league_id: 'demo-league', name: 'Lift Violators', emoji: '🚨', draft_seed: 1 },
+    { id: 't3', league_id: 'demo-league', name: 'Rhythm & Booze', emoji: '🍸', draft_seed: 4 },
+    { id: 't4', league_id: 'demo-league', name: 'Mirrorball Mafia', emoji: '🪩', draft_seed: 2 },
   ],
   members: [
     { team_id: 't1', user_id: ME, display_name: 'paddy' }, { team_id: 't1', user_id: 'u2', display_name: 'the wife' },
@@ -96,10 +96,12 @@ export const demoApi = {
     async getUser() { return { id: ME, email: 'paddy@example.com' } },
     async signIn() { return {} },
     async signOut() {},
+    async updatePassword() {},
+    async updateEmail() {},
     onChange(cb) { authListeners.push(cb); return () => { authListeners = authListeners.filter(f => f !== cb) } },
   },
   async getProfile() { return { user_id: ME, display_name: 'paddy', is_admin: true } },
-  async updateProfile() {},
+  async updateProfile(display_name) { state.members.find(m => m.user_id === ME).display_name = display_name },
   async loadSeason() { await wait(); return clone({ season: state.season, couples: state.couples, weeks: state.weeks, scores: state.scores }) },
   async loadMyLeagues() { return clone([state.league]) },
   async loadLeague() {
@@ -140,7 +142,6 @@ export const demoApi = {
     for (const c of state.couples) if (c.eliminated_week === week.number) c.eliminated_week = null
     for (const id of eliminatedIds) state.couples.find(c => c.id === id).eliminated_week = week.number
   },
-  async setWinner(_s, coupleId) { state.season.winner_couple_id = coupleId },
   async createLeague() { return state.league.id },
   async teamsForCode() { return state.teams.map(t => ({ id: t.id, name: t.name, emoji: t.emoji, league_name: state.league.name, member_count: 2 })) },
   async joinLeague() { return state.league.id },
