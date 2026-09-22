@@ -46,7 +46,7 @@ export default function DraftRoom() {
   async function pick() { if (!sel) return; setBusy(true); try { await api.makePick(league.id, week.id, sel); setSel(null); showToast(`${coupleById[sel].celeb}. Locked.`); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
   async function reset() { if (!confirm('Wipe this week\'s draft and start over?')) return; setBusy(true); try { await api.resetDraft(league.id, week.id); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
 
-  const canOpen = isCommissioner || profile?.is_admin || roomOpen
+  const canOpen = isCommissioner || profile?.is_admin
 
   return (
     <div className="stack" style={{ gap: 20 }}>
@@ -55,14 +55,14 @@ export default function DraftRoom() {
         <section className="hero">
           <Sparkles n={8} seed={5} />
           <div className="eyebrow">{week.title} · Draft room</div>
-          <h1>{roomOpen ? 'Doors are open' : `Doors open in ${fmtCountdown(msToOpen)}`}</h1>
+          <h1>{canOpen ? 'Ready when you are' : 'Waiting for the commissioner'}</h1>
           <p style={{ margin: 0 }}>
             The commissioner hits the button, the teams dance it out for the draft order (it's random, the dancing is for morale), then it's a live snake draft, everyone picking in turn with <b>60 seconds</b> on the clock. If you're not here when it's your turn, the site picks for you, <b>completely at random</b>, from whoever's left. Yes, that could be Guillermo. Show up.
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            <button className="btn" disabled={busy || !canOpen} onClick={start}>{isCommissioner || roomOpen ? '💃 Start the dance-off' : 'Waiting for the commissioner'}</button>
-            <span className="small muted">Scheduled for {fmtET(week.draft_opens_at)}. {isCommissioner ? 'Commissioner can open early.' : 'Anyone can open it once it\'s time.'}</span>
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>💃 Start the dance-off</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
       )}
@@ -135,11 +135,11 @@ export default function DraftRoom() {
       )}
 
       {/* ---------- DONE ---------- */}
-      {(phase === 'window' || phase === 'live' || phase === 'scored') && (
+      {(phase === 'window' || phase === 'scored') && (
         <section className="hero">
           <div className="eyebrow">{week.title} · Draft complete</div>
           <h1>Rosters are set</h1>
-          <p style={{ margin: 0 }}>{phase === 'window' ? <>The snipe window is open until {fmtET(week.show_lock_at)}. <a href="#power">Snipes</a> are live.</> : 'Locked for the show.'}</p>
+          <p style={{ margin: 0 }}>{phase === 'window' ? <>The snipe window is open until the scores go in. <a href="#power">Snipes</a> are live.</> : 'Season complete.'}</p>
         </section>
       )}
 
@@ -161,7 +161,7 @@ export default function DraftRoom() {
               )
             })}
           </div>
-          {(isCommissioner || profile?.is_admin) && phase !== 'live' && phase !== 'scored' && (
+          {(isCommissioner || profile?.is_admin) && phase !== 'scored' && (
             <div className="row" style={{ marginTop: 12 }}><button className="btn ghost small" disabled={busy} onClick={reset}>Commissioner: wipe and redraft</button></div>
           )}
         </section>

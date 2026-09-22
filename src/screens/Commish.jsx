@@ -80,7 +80,7 @@ export default function Commish() {
             <label className="small">Dances <select value={dances} onChange={e => setDances(Number(e.target.value))}>{[1, 2, 3].map(n => <option key={n}>{n}</option>)}</select></label>
           </div>
         </div>
-        <p className="small muted">Enter each couple's total paddles for the night (all dances added up), out of {maxPossible}. Tick anyone who went home. Show locks {fmtET(week.show_lock_at)}.</p>
+        <p className="small muted">Enter each couple's total paddles for the night (all dances added up), out of {maxPossible}. Tick anyone who went home. Saving closes the snipe window and reveals any snipes.</p>
         {!canScore && <p className="small" style={{ color: 'var(--bad)' }}>Only the site admin can enter scores (they're shared by every league). Ask them, or set <code>is_admin</code> on your profile.</p>}
         <div className="row" style={{ margin: '8px 0 14px' }}>
           <button className="btn blue small" disabled={busy || !canScore} onClick={importWiki}>Auto-fill from Wikipedia</button>
@@ -105,7 +105,7 @@ export default function Commish() {
       <div className="grid two">
         <section className="card">
           <h3>Draft controls</h3>
-          <p className="small muted">The live draft runs in the <a href="#draft">Draft Room</a>: you open it (any time; friends can open it themselves once it's {fmtET(week.draft_opens_at)}), 60 seconds a pick, random auto-pick on a missed turn. A do-over button lives at the bottom of the Draft Room.</p>
+          <p className="small muted">The live draft runs in the <a href="#draft">Draft Room</a>: only you can start it, whenever you're ready; 60 seconds a pick, random auto-pick on a missed turn. A do-over button lives at the bottom of the Draft Room.</p>
         </section>
       </div>
 

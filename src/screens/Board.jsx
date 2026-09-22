@@ -22,11 +22,10 @@ export default function Board() {
         <Sparkles n={9} seed={11} />
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div className="eyebrow">{league.name} · Season tracker</div>
-          <span className={`pill ${phase === 'live' || phase === 'drafting' ? 'live' : phase === 'window' ? 'pink' : 'blue'}`}>
-            {phase === 'pre' && (msToOpen > 0 ? `Draft room opens in ${fmtCountdown(msToOpen)}` : 'Draft room can open')}
+          <span className={`pill ${phase === 'drafting' ? 'live' : phase === 'window' ? 'pink' : 'blue'}`}>
+            {phase === 'pre' && `${week.title} · draft not started`}
             {phase === 'drafting' && 'Draft in progress'}
-            {phase === 'window' && `Snipe window · closes in ${fmtCountdown(msToShowLock)}`}
-            {phase === 'live' && 'Show is live · scores pending'}
+            {phase === 'window' && 'Snipe window open · scores pending'}
             {phase === 'scored' && 'Season complete'}
           </span>
         </div>
@@ -39,7 +38,7 @@ export default function Board() {
             </p>
           </>
         ) : (
-          <><h1>Nobody's scored yet</h1><p style={{ margin: 0 }}>First draft room opens {fmtET(week.draft_opens_at)}. Be there or get Guillermo.</p></>
+          <><h1>Nobody's scored yet</h1><p style={{ margin: 0 }}>The commissioner starts the draft in the <a href="#draft">Draft Room</a>. Be there or get Guillermo.</p></>
         )}
       </section>
 
@@ -81,7 +80,7 @@ export default function Board() {
           <span className="pill">{crunch ? 'Crunch time · shared picks' : `${rosterSize(alive.length, teams.length)} per team · ${alive.length - rosterSize(alive.length, teams.length) * teams.length} undrafted`}</span>
         </div>
         {phase === 'pre' ? (
-          <p className="muted">Live draft {fmtET(week.draft_opens_at)} in the <a href="#draft">Draft Room</a>. 60 seconds a pick, random auto-pick if you're not there.</p>
+          <p className="muted">Draft hasn't started. When the commissioner hits the button in the <a href="#draft">Draft Room</a>: 60 seconds a pick, random auto-pick if you're not there.</p>
         ) : phase === 'drafting' ? (
           <p className="muted">Draft is happening right now, pick {draft.current_index + 1} of {teams.length * draft.roster}. <a href="#draft">Get in the room.</a></p>
         ) : weekPicks.length === 0 ? (
@@ -100,7 +99,7 @@ export default function Board() {
             ))}
           </div>
         )}
-        {phase === 'window' && myTeam && <p className="small" style={{ marginTop: 10 }}>Snipe window is open until {fmtET(week.show_lock_at)}. <a href="#power">Use yours</a> if you dare.</p>}
+        {phase === 'window' && myTeam && <p className="small" style={{ marginTop: 10 }}>Snipe window is open until the scores go in. <a href="#power">Use yours</a> if you dare.</p>}
       </section>
 
       <section className="card">

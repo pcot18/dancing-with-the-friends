@@ -61,22 +61,21 @@ export function useToast() {
 export function fmtPts(n) { return (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) }
 
 /**
- * Which week is "current" and what phase it's in.
- * pre      → draft room not open yet (countdown to draft_opens_at)
+ * Which week is "current" and what phase it's in. Nothing here is tied to the clock:
+ * the current week is the earliest week without judges' scores, and the phase comes from state.
+ * pre      → no draft yet (commissioner starts it whenever)
  * drafting → live draft in progress
- * window   → draft done, show not locked: power plays open
- * live     → show locked, scores pending
- * scored   → everything's in (season over)
+ * window   → draft done, scores not in: snipes open
+ * scored   → season complete
  */
 export function currentWeekInfo(weeks, scores, drafts, now) {
   const t = now.getTime()
   const scored = new Set(scores.map(s => s.week_id))
-  let week = weeks.find(w => new Date(w.show_lock_at).getTime() > t) || weeks[weeks.length - 1]
-  if (scored.has(week.id)) week = weeks.find(w => w.number === week.number + 1) || week
+  const week = weeks.find(w => !scored.has(w.id)) || weeks[weeks.length - 1]
   const draft = (drafts || []).find(d => d.week_id === week.id) || null
   const opens = new Date(week.draft_opens_at).getTime(), sl = new Date(week.show_lock_at).getTime()
   let phase
-  if (t >= sl) phase = scored.has(week.id) ? 'scored' : 'live'
+  if (scored.has(week.id)) phase = 'scored'
   else if (draft?.status === 'done') phase = 'window'
   else if (draft?.status === 'live') phase = 'drafting'
   else phase = 'pre'

@@ -31,8 +31,8 @@ export default function PowerPlays() {
         <div className="eyebrow">Power play · {week.title}</div>
         <h1>The Snipe</h1>
         <p style={{ margin: 0 }}>
-          {windowOpen ? <>The trade window is open for <b className="mono">{fmtCountdown(msToShowLock)}</b>. A snipe is hidden until the show locks at {fmtET(week.show_lock_at)}, then it's revealed on the Board for everyone. Enjoy that.</>
-            : phase === 'pre' || phase === 'drafting' ? <>The snipe window opens the moment the live draft finishes and closes at showtime ({fmtET(week.show_lock_at)}).</>
+          {windowOpen ? <>The snipe window is open until this week's scores are entered. A snipe is hidden until then, and revealed on the Board for everyone once the scores go in. Enjoy that.</>
+            : phase === 'pre' || phase === 'drafting' ? <>The snipe window opens the moment the live draft finishes and closes when the week's scores are entered.</>
             : <>Window's closed for this week. Plot for next week.</>}
         </p>
       </section>
@@ -65,7 +65,7 @@ export default function PowerPlays() {
 
         <section className="card">
           <h3>How it plays</h3>
-          <p className="small muted">One per team, all season. Use it the week the draft goes badly, or the week a rival lands the obvious ringer, or never, so everyone else spends the whole season wondering when you'll do it. Once both couples are swapped they're locked: nobody can snipe them back the same week. The victim finds out when the show locks and the Board reveals it.</p>
+          <p className="small muted">One per team, all season. Use it the week the draft goes badly, or the week a rival lands the obvious ringer, or never, so everyone else spends the whole season wondering when you'll do it. Once both couples are swapped they're locked: nobody can snipe them back the same week. The victim finds out when the scores go in and the Board reveals it.</p>
         </section>
       </div>
 
