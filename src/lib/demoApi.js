@@ -2,7 +2,7 @@
 // Real season state (weeks 1–2 scored, two couples gone), pretend it's tonight 7:32pm ET: the
 // draft room just opened and you're on the clock. The other teams are bots (one "isn't here").
 import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
-import { DEFAULT_SETTINGS, draftOrder, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
+import { DEFAULT_SETTINGS, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
 const DEMO_BASE = new Date('2026-09-22T23:32:00Z').getTime()
 const LOADED = Date.now()
@@ -42,10 +42,10 @@ const alive = () => state.couples.filter(c => c.eliminated_week == null).map(c =
 const takenIn = (weekId) => new Set(state.picks.filter(p => p.week_id === weekId).map(p => p.couple_id))
 
 function openDraft(week) {
-  const order = draftOrder({ week, weeks: state.weeks, teams: state.teams, standingsInput: standingsInput() }).map(t => t.id)
+  const order = [...state.teams].map(t => ({ t, r: Math.random() })).sort((a, b) => a.r - b.r).map(x => x.t.id)   // random every week, like the SQL
   const a = alive(); const crunch = isCrunch(a.length, state.teams.length)
   const d = { league_id: state.league.id, week_id: week.id, status: 'live', order_ids: order, roster: crunch ? 1 : rosterSize(a.length, state.teams.length), crunch,
-    current_index: 0, pick_seconds: 60, pick_deadline_at: new Date(nowMs() + 60000).toISOString(), started_at: new Date(nowMs()).toISOString(), finished_at: null }
+    current_index: 0, pick_seconds: 60, reveal_seconds: 10, pick_deadline_at: new Date(nowMs() + 70000).toISOString(), started_at: new Date(nowMs()).toISOString(), finished_at: null }
   state.drafts = state.drafts.filter(x => x.week_id !== week.id); state.drafts.push(d)
   state.picks = state.picks.filter(p => p.week_id !== week.id)
   return d
@@ -80,7 +80,8 @@ function scheduleBots() {
   if (!d || d.status !== 'live') return
   const onClock = drafterAt(d.order_ids, d.current_index, d.crunch)
   if (onClock === 't1' || onClock === ABSENT) return   // you, or the empty chair
-  botTimer = setTimeout(() => { applyPick(d, botChoice(d, Date.now()), false); emit(); scheduleBots() }, 2500 + Math.random() * 4000)
+  const revealLeft = Math.max(0, new Date(d.started_at).getTime() + d.reveal_seconds * 1000 - nowMs())
+  botTimer = setTimeout(() => { applyPick(d, botChoice(d, Date.now()), false); emit(); scheduleBots() }, revealLeft + 2500 + Math.random() * 4000)
 }
 scheduleBots()
 

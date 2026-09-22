@@ -11,7 +11,7 @@ Static React app on GitHub Pages, Supabase for login and data. Costs nothing to 
 
 - **Teams.** A league has N teams (you're doing 4 couples). Members of a team (a couple) share one seat in the draft and one roster.
 - **Live weekly draft.** Tuesday before the show (room opens **7:30pm ET**), everyone gets in the Draft Room and picks in turn, snake order, **60 seconds on the clock**. Miss your turn and the site picks for you, **completely at random** from whoever's left. Roster size = couples remaining ÷ teams, rounded down; leftover couples go undrafted. The commissioner opens the room (any time); once it's 7:30 anyone in the league can open it.
-- **Draft order.** Week 1 random, then reverse standings (last place picks first).
+- **Draft order.** Random every week, revealed by a 10-second dance-off when the commissioner opens the room (last pick revealed first, first pick last). Set `draft_order` to `reverse_standings` in `leagues.settings` if you'd rather last place picks first.
 - **Snipe window.** From the last pick until **Tuesday 8pm ET** (show lock). A snipe made in the window is hidden until show lock, then revealed on the Board.
 - **Scoring.** Sum of your drafted couples' judges' scores, normalized to a 3-judge / 30-point-per-dance basis. Multi-dance nights count every dance. **Sent home = half points.**
 - **Crunch time.** The first week there are fewer couples than teams, everyone picks exactly one, duplicates allowed, points split among owners.
@@ -60,7 +60,7 @@ The cast and scouting reports are in `src/data/cast.js`; `node scripts/gen-seed.
 ```
 src/
   App.jsx               shell, auth gate, league gate, tabs, ticker
-  screens/              Board, DraftRoom, PowerPlays (the Snipe), Cast, Recap, Commish, Settings, Login, JoinLeague
+  screens/              Board, DraftRoom + DanceOff, PowerPlays (the Snipe), Cast, Recap, Commish, Settings, Login, JoinLeague
   supabase.config.js    project URL + anon key
   lib/scoring.js        scoring engine (mirrors the SQL functions)
   lib/supabaseApi.js    real backend
@@ -68,7 +68,7 @@ src/
   lib/wikipedia.js      score auto-fill
   data/cast.js          Season 35 cast + scouting copy
 supabase/
-  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired
+  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired · 0004 dance-off + random order
   seed.sql                     generated from src/data/cast.js
 ```
 

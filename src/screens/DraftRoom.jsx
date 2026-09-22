@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData, CoupleChip, TeamName, Sparkles, fmtCountdown, fmtET, initials } from '../ui.jsx'
 import { drafterAt, totalPicks, rosterSize, isCrunch } from '../lib/scoring.js'
+import DanceOff from './DanceOff.jsx'
 
 export default function DraftRoom() {
   const { api, league, teams, members, couples, scores, picks, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
@@ -26,6 +27,8 @@ export default function DraftRoom() {
   const onClockId = draft?.status === 'live' ? drafterAt(draft.order_ids, draft.current_index, draft.crunch) : null
   const onClock = onClockId ? teamById[onClockId] : null
   const isMe = !!(onClock && myTeam && onClock.id === myTeam.id)
+  const revealEnds = draft?.started_at ? new Date(draft.started_at).getTime() + (draft.reveal_seconds ?? 10) * 1000 : 0
+  const revealing = draft?.status === 'live' && now.getTime() < revealEnds
   const deadline = draft?.pick_deadline_at ? new Date(draft.pick_deadline_at).getTime() : null
   const secsLeft = deadline ? Math.max(0, Math.ceil((deadline - now.getTime()) / 1000)) : null
 
@@ -39,7 +42,7 @@ export default function DraftRoom() {
     }
   }, [now, draft, deadline])
 
-  async function start() { setBusy(true); try { await api.startDraft(league.id, week.id); showToast('Room is open. Clocks are running.'); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
+  async function start() { setBusy(true); try { await api.startDraft(league.id, week.id); showToast('Dance-off! Order reveals in 10 seconds.'); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
   async function pick() { if (!sel) return; setBusy(true); try { await api.makePick(league.id, week.id, sel); setSel(null); showToast(`${coupleById[sel].celeb}. Locked.`); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
   async function reset() { if (!confirm('Wipe this week\'s draft and start over?')) return; setBusy(true); try { await api.resetDraft(league.id, week.id); reload() } catch (e) { showToast(e.message, true) } finally { setBusy(false) } }
 
@@ -54,18 +57,21 @@ export default function DraftRoom() {
           <div className="eyebrow">{week.title} · Draft room</div>
           <h1>{roomOpen ? 'Doors are open' : `Doors open in ${fmtCountdown(msToOpen)}`}</h1>
           <p style={{ margin: 0 }}>
-            Live snake draft, everyone picks in turn, <b>60 seconds</b> on the clock. If you're not here when it's your turn, the site picks for you, <b>completely at random</b>, from whoever's left. Yes, that could be Guillermo. Show up.
+            The commissioner hits the button, the teams dance it out for the draft order (it's random, the dancing is for morale), then it's a live snake draft, everyone picking in turn with <b>60 seconds</b> on the clock. If you're not here when it's your turn, the site picks for you, <b>completely at random</b>, from whoever's left. Yes, that could be Guillermo. Show up.
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            <button className="btn" disabled={busy || !canOpen} onClick={start}>{isCommissioner ? 'Open the draft room' : roomOpen ? 'Open the draft room' : 'Waiting for the commissioner'}</button>
+            <button className="btn" disabled={busy || !canOpen} onClick={start}>{isCommissioner || roomOpen ? '💃 Start the dance-off' : 'Waiting for the commissioner'}</button>
             <span className="small muted">Scheduled for {fmtET(week.draft_opens_at)}. {isCommissioner ? 'Commissioner can open early.' : 'Anyone can open it once it\'s time.'}</span>
           </div>
         </section>
       )}
 
+      {/* ---------- DANCE-OFF ---------- */}
+      {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} />}
+
       {/* ---------- DRAFTING ---------- */}
-      {phase === 'drafting' && draft && (
+      {phase === 'drafting' && draft && !revealing && (
         <>
           <section className={`hero`} style={isMe ? { background: 'linear-gradient(120deg, var(--pink-soft), var(--gold-soft))', borderColor: 'var(--pink-deep)' } : undefined}>
             {isMe && <Sparkles n={10} seed={9} />}

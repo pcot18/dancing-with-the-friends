@@ -168,3 +168,20 @@ tr.leader td:first-child { border-left: 4px solid var(--gold); }
 .reveal { animation: pop 0.5s cubic-bezier(.2,1.6,.4,1) both; }
 @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
+
+/* ---- dance-off ---- */
+.danceoff { background: linear-gradient(120deg, var(--pink-soft), var(--gold-soft), var(--blue-soft)); background-size: 300% 300%; animation: discofloor 3s ease infinite; }
+@keyframes discofloor { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+.shimmer { background: linear-gradient(90deg, var(--ink), var(--pink-deep), var(--blue-deep), var(--ink)); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 2.2s linear infinite; }
+@keyframes shimmer { to { background-position: 300% 0; } }
+.danceoff-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.danceoff-row { display: grid; grid-template-columns: 3.2rem 2.4rem 1fr auto; align-items: center; gap: 10px; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 8px 12px; }
+.danceoff-row.revealed { border-color: var(--pink-deep); animation: pop 0.45s cubic-bezier(.2,1.6,.4,1) both; }
+.danceoff-slot { font-family: "Lilita One", sans-serif; font-size: 1.3rem; color: var(--pink-deep); }
+.danceoff-em { font-size: 1.7rem; display: inline-block; }
+.danceoff-em.dancing { animation: boogie 0.5s ease-in-out infinite alternate; }
+@keyframes boogie { from { transform: translateY(0) rotate(-14deg) scale(1); } to { transform: translateY(-6px) rotate(14deg) scale(1.15); } }
+.danceoff-name { font-weight: 800; }
+.danceoff-name.scramble { filter: blur(0.6px); opacity: 0.7; animation: jitter 0.25s steps(2) infinite; }
+@keyframes jitter { from { transform: translateX(-2px); } to { transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) { .danceoff, .shimmer, .danceoff-em.dancing, .danceoff-name.scramble, .danceoff-row.revealed { animation: none; } .danceoff-name.scramble { filter: none; } }
