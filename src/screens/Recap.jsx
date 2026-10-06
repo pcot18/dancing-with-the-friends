@@ -41,6 +41,7 @@ export default function Recap() {
                     <td className="num"><b>{fmtPts(p.adj)}</b></td>
                   </tr>
                 ))}
+                {w.call && <tr><td colSpan={2} className="small" style={{ color: w.call.hit ? 'var(--good)' : 'var(--muted)' }}>☎️ Called {w.call.couple?.celeb} at {w.call.predicted}{w.call.hit ? ' · nailed it' : w.call.coupleRight ? ' · right couple, wrong score' : ' · nope'}</td><td className="num" style={{ color: w.call.hit ? 'var(--good)' : 'var(--muted)' }}>{w.call.hit ? `+${w.call.bonus}` : '0'}</td></tr>}
               </tbody>
             </table>
           </section>

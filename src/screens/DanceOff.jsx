@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-
-const MOVES = ['💃', '🕺', '🪩', '✨', '🎺', '🦩', '👯', '🎶']
-const CALLS = ['Judges, your paddles please…', 'Bruno is on his feet…', 'Carrie Ann spotted a lift…', 'Derek is doing the face…', 'The audience is losing it…', 'Somebody call the paramedics…']
+import { THEMES } from '../data/cast.js'
 
 // Scramble the whole field, then reveal the draft order from last pick to first.
 // Every client renders this off the draft's started_at, so the room stays in sync.
-export default function DanceOff({ draft, teams, members, now }) {
+export default function DanceOff({ draft, teams, members, now, week }) {
+  const theme = { ...THEMES.default, ...(THEMES[week?.number] || {}) }
+  const MOVES = theme.moves, CALLS = theme.calls
+  const img = theme.image ? `${import.meta.env.BASE_URL}${theme.image}` : null
   const teamById = Object.fromEntries(teams.map(t => [t.id, t]))
   const order = draft.order_ids
   const n = order.length
@@ -38,13 +39,18 @@ export default function DanceOff({ draft, teams, members, now }) {
   const done = locked >= n
 
   return (
-    <section className="hero danceoff" style={{ borderColor: 'var(--pink-deep)' }}>
+    <section className="hero danceoff" style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <div className="eyebrow">Draft order · dance-off</div>
+        <div className="eyebrow">Draft order · {theme.name || 'dance-off'}</div>
         <span className="pill live">Live</span>
       </div>
-      <h1 className="shimmer">{done ? 'Order is set. Clocks start now.' : locked > 0 ? `And picking ${ordinal(n - locked + 1)}…` : 'Dance-off for the draft order'}</h1>
-      <p className="muted" style={{ margin: 0, minHeight: '1.5em' }}>{done ? 'Good luck to everyone except your friends.' : call}</p>
+      <div className="row" style={{ alignItems: 'center', gap: 16, flexWrap: 'nowrap' }}>
+        {img && <img src={img} alt="" className={`danceoff-host${done ? '' : ' judging'}`} />}
+        <div style={{ minWidth: 0 }}>
+          <h1 className="shimmer">{done ? 'Order is set. Clocks start now.' : locked > 0 ? `And picking ${ordinal(n - locked + 1)}…` : theme.headline}</h1>
+          <p className="muted" style={{ margin: 0, minHeight: '1.5em' }}>{done ? theme.done : call}</p>
+        </div>
+      </div>
       <ol className="danceoff-list">
         {rows.map(r => (
           <li key={r.slot} className={`danceoff-row${r.revealed ? ' revealed' : ''}`}>

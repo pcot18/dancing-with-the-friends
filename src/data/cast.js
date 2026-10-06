@@ -10,7 +10,7 @@ export const WEEKS = [
   { number: 2,  title: 'Premiere Night 2',  tuesday: '2026-09-16' },
   { number: 3,  title: 'Viral Hits Night',  tuesday: '2026-09-22' },
   { number: 4,  title: 'Yacht Rock Night',  tuesday: '2026-09-29' },
-  { number: 5,  title: 'Week 5',            tuesday: '2026-10-06' },
+  { number: 5,  title: 'Mariah Carey Night', tuesday: '2026-10-06' },
   { number: 6,  title: 'Week 6',            tuesday: '2026-10-13' },
   { number: 7,  title: 'Week 7',            tuesday: '2026-10-20' },
   { number: 8,  title: 'Week 8',            tuesday: '2026-10-27' },
@@ -39,6 +39,8 @@ export const SCORES = [
   { week: 2, couple: 4,  total: 12 }, { week: 2, couple: 3,  total: 18 }, { week: 2, couple: 14, total: 15 },
   { week: 2, couple: 16, total: 16 }, { week: 2, couple: 5,  total: 18 }, { week: 2, couple: 12, total: 21 },
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
+  { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
+  { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
 ]
 
 export const COUPLES = [
@@ -87,7 +89,7 @@ export const COUPLES = [
     comp: 'Hannah Brown, S28 champion (yes, that one)', vote_engine: 'Bachelor Nation, HGTV crossover',
     bio: "Former college football player, runner-up on Hannah Brown's Bachelorette, and the franchise's most famous case of losing the girl and winning the internet. Hannah then won this show, so there is a narrative. Sharna Burgess is back after five years away and won her Mirrorball with a radio host who could not dance, which tells you what she does with a man who takes direction.",
     red_flag: "6'4\" in a jive. Long limbs are a cha-cha problem until they aren't." },
-  { id: 10, celeb: 'Taylor Hanson', pro: 'Britt Stewart', known_for: 'Hanson', tier: 2,
+  { id: 10, celeb: 'Taylor Hanson', pro: 'Britt Stewart', known_for: 'Hanson', tier: 2, eliminated_week: 4,
     position: 'Musician, rhythm-first', grade: 'B', floor: 17, ceiling: 27,
     comp: 'Joey Fatone, S4 runner-up', vote_engine: 'Thirty years of Hanson fans, seven children',
     bio: "The middle Hanson, keys and lead vocals, famous since 1997, still touring. Musicians reliably hear the count, and keys players hear it best. Father of seven, so the \"I've never had a moment to myself\" package writes itself. Britt Stewart is a strong technician who's been waiting for a partner with rhythm.",
@@ -117,7 +119,7 @@ export const COUPLES = [
     comp: 'Her sister Brooks, S33, ninth place', vote_engine: 'Love Thy Nader, the Nader sister multiverse',
     bio: "Actress, model, star of Love Thy Nader, and the second Nader sister to enter the ballroom after Brooks went out ninth. The season's same-sex pairing, with Hailey Bills promoted from the ensemble to pro. First-year pros go home early far more often than not, but a same-sex partnership means both dancers can lead and follow, and the choreography can go places the standard pairings can't.",
     red_flag: 'Four other reality stars are splitting the same vote. Someone from this tier goes home week 2 and it\'s probably not Guillermo.' },
-  { id: 16, celeb: 'Giada De Laurentiis', pro: 'Alan Bersten', known_for: 'Food Network', tier: 3,
+  { id: 16, celeb: 'Giada De Laurentiis', pro: 'Alan Bersten', known_for: 'Food Network', tier: 3, eliminated_week: 3,
     position: 'Celebrity chef · veteran presence', grade: 'C', floor: 13, ceiling: 23,
     comp: "Carole Baskin's scores, Paula Deen's exit", vote_engine: "Fifteen seasons of Everyday Italian, everyone's mom",
     bio: "Emmy winner, restaurateur, the face of Food Network for two decades. Chefs have not historically done well here, but chefs have also not historically been paired with Alan Bersten, a champion who can teach anyone a Viennese waltz. She's camera-trained, composed under pressure, and used to doing precise things with her hands while someone counts down. That's more relevant than it sounds.",
@@ -125,3 +127,23 @@ export const COUPLES = [
 ]
 
 export const TIERS = { 1: 'The Ringers', 2: 'The Contenders', 3: 'The Vote Machines' }
+
+// Per-week dance-off themes. Keyed by week number; anything not listed uses `default`.
+// `image` is a file in /public. Calls are the commentary lines that cycle during the scramble.
+export const THEMES = {
+  default: {
+    headline: 'Dance-off for the draft order',
+    moves: ['💃', '🕺', '🪩', '✨', '🎺', '🦩', '👯', '🎶'],
+    calls: ['Judges, your paddles please…', 'Bruno is on his feet…', 'Carrie Ann spotted a lift…', 'Derek is doing the face…', 'The audience is losing it…', 'Somebody call the paramedics…'],
+    done: 'Good luck to everyone except your friends.',
+  },
+  5: {
+    name: 'Mariah Carey Night',
+    image: 'mariah.jpg',
+    headline: 'Mariah is choosing the draft order',
+    moves: ['🦋', '💎', '🎤', '✨', '🎄', '🥂', '👑', '💅'],
+    calls: ['Dahling, hold on, she\'s thinking…', 'Hitting the whistle note for pick one…', 'She doesn\'t know her. Or her. Or him.', 'It\'s not even Thanksgiving, but…', 'Fanning herself. Diva business.', 'Releasing the butterflies…', 'Festive. Very festive.', 'Lambs, your attention please…'],
+    done: 'The Elusive Chanteuse has spoken.',
+    tint: 'linear-gradient(120deg, #FFE3F1, #FFF3C7, #E6DAFF)',
+  },
+}

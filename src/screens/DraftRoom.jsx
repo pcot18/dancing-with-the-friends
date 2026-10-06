@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData, CoupleChip, TeamName, Sparkles, fmtCountdown, fmtET, initials } from '../ui.jsx'
 import { drafterAt, totalPicks, rosterSize, isCrunch } from '../lib/scoring.js'
 import DanceOff from './DanceOff.jsx'
+import { THEMES } from '../data/cast.js'
 
 export default function DraftRoom() {
-  const { api, league, teams, members, couples, scores, picks, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
+  const { api, league, teams, members, couples, scores, picks, predictions, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
+  const theme = THEMES[weekInfo.week.number]
   const { week, phase, draft, msToOpen, roomOpen } = weekInfo
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const teamById = Object.fromEntries(teams.map(t => [t.id, t]))
@@ -55,20 +57,20 @@ export default function DraftRoom() {
         <section className="hero">
           <Sparkles n={8} seed={5} />
           <div className="eyebrow">{week.title} · Draft room</div>
-          <h1>{canOpen ? 'Ready when you are' : 'Waiting for the commissioner'}</h1>
+          <h1>{theme?.name ? `${theme.name} 🎤` : canOpen ? 'Ready when you are' : 'Waiting for the commissioner'}</h1>
           <p style={{ margin: 0 }}>
             The commissioner hits the button, the teams dance it out for the draft order (it's random, the dancing is for morale), then it's a live snake draft, everyone picking in turn with <b>60 seconds</b> on the clock. If you're not here when it's your turn, the site picks for you, <b>completely at random</b>, from whoever's left. Yes, that could be Guillermo. Show up.
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            {canOpen ? <button className="btn" disabled={busy} onClick={start}>💃 Start the dance-off</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
             <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
       )}
 
       {/* ---------- DANCE-OFF ---------- */}
-      {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} />}
+      {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} week={week} />}
 
       {/* ---------- DRAFTING ---------- */}
       {phase === 'drafting' && draft && !revealing && (
@@ -143,6 +145,9 @@ export default function DraftRoom() {
         </section>
       )}
 
+      {/* ---------- ELIMINATION CALL ---------- */}
+      {phase === 'window' && myTeam && <EliminationCall />}
+
       {/* rosters (any phase once picks exist) */}
       {weekPicks.length > 0 && (
         <section className="card">
@@ -182,5 +187,42 @@ function Clock({ secs, total, urgent }) {
       </svg>
       <div className="display" style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: '1.8rem', color: urgent ? 'var(--bad)' : 'var(--ink)' }}>{secs}</div>
     </div>
+  )
+}
+
+function EliminationCall() {
+  const { api, league, couples, teams, predictions, myTeam, weekInfo, reload, showToast } = useData()
+  const { week } = weekInfo
+  const s = league.settings || {}
+  const pts = s.elim_call_points ?? 10
+  const needScore = s.elim_call_requires_score !== false
+  const mine = predictions.find(p => p.team_id === myTeam.id && p.week_id === week.id)
+  const [couple, setCouple] = useState(mine?.couple_id || '')
+  const [score, setScore] = useState(mine?.predicted_score ?? '')
+  const [busy, setBusy] = useState(false)
+  const alive = couples.filter(c => !c.eliminated_week)
+  const made = predictions.filter(p => p.week_id === week.id).length
+  async function save(e) {
+    e.preventDefault(); setBusy(true)
+    try { await api.makeCall(league.id, week.id, Number(couple), Number(score)); showToast('Call locked. Hidden until the scores go in.'); reload() }
+    catch (err) { showToast(err.message, true) } finally { setBusy(false) }
+  }
+  return (
+    <section className="card call-card">
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>☎️ The Elimination Call</h2>
+        <span className="pill gold">+{pts} if you nail it</span>
+      </div>
+      <p className="small muted">Who's going home tonight, and what will the judges give them? {needScore ? <>Get <b>both</b> right (exact score, out of 30) and it's +{pts} on your week.</> : <>Name the right couple and it's +{pts} on your week.</>} Everyone's call is hidden until the scores are entered. {made} of {teams.length} teams have called it.</p>
+      <form className="row" onSubmit={save} style={{ marginTop: 8 }}>
+        <select value={couple} onChange={e => setCouple(e.target.value)} required aria-label="Who goes home">
+          <option value="">Who goes home…</option>
+          {alive.map(c => <option key={c.id} value={c.id}>{c.celeb} & {c.pro}</option>)}
+        </select>
+        <input type="number" min="3" max="30" step="1" value={score} onChange={e => setScore(e.target.value)} required placeholder="Their score /30" aria-label="Their score" style={{ width: 150 }} />
+        <button className="btn" disabled={busy || !couple || score === ''}>{mine ? 'Update call' : 'Lock it in'}</button>
+      </form>
+      {mine && <p className="small muted" style={{ marginTop: 8 }}>Your call: <b>{couples.find(c => c.id === mine.couple_id)?.celeb}</b> goes home with a <b>{Number(mine.predicted_score)}</b>. You can change it until the scores are in.</p>}
+    </section>
   )
 }

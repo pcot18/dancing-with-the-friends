@@ -4,6 +4,8 @@
 export const DEFAULT_SETTINGS = {
   elimination_multiplier: 0.5,
   snipes_per_season: 1,
+  elim_call_points: 10,
+  elim_call_requires_score: true,
 }
 
 export function normalizeScore(score, week) {
@@ -16,7 +18,7 @@ export function normalizeScore(score, week) {
  * TeamLine = { team, total, weeklyWins, weeks: { [weekId]: WeekLine } }
  * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], won }
  */
-export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples }) {
+export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [] }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
@@ -37,7 +39,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
   const lines = {}
   for (const t of teams) {
     lines[t.id] = { team: t, total: 0, weeklyWins: 0, weeks: {} }
-    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], won: false }
+    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], call: null, won: false }
   }
 
   for (const p of picks) {
@@ -55,6 +57,18 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
       line.weeks[p.week_id].points += entry.adj
     }
     line.weeks[p.week_id].picks.push(entry)
+  }
+
+  // Elimination Call bonus
+  for (const pr of predictions) {
+    const line = lines[pr.team_id]; const week = weekById[pr.week_id]
+    if (!line || !week || !weeksScored.includes(pr.week_id)) continue
+    const s = scoreMap[scoreKey(pr.week_id, pr.couple_id)]
+    const coupleRight = !!s?.eliminated
+    const scoreRight = s ? normalizeScore(s, week) === Number(pr.predicted_score) : false
+    const hit = coupleRight && (scoreRight || !settings.elim_call_requires_score)
+    line.weeks[pr.week_id].call = { couple: coupleById[pr.couple_id], predicted: Number(pr.predicted_score), coupleRight, scoreRight, hit, bonus: hit ? settings.elim_call_points : 0 }
+    if (hit) line.weeks[pr.week_id].points += settings.elim_call_points
   }
 
   for (const t of teams) {

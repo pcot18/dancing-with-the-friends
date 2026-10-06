@@ -4,7 +4,7 @@
 import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
 import { DEFAULT_SETTINGS, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const DEMO_BASE = new Date('2026-09-22T23:32:00Z').getTime()
+const DEMO_BASE = new Date('2026-10-06T23:32:00Z').getTime()
 const LOADED = Date.now()
 const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
 const NOW = new Date(DEMO_BASE)
@@ -31,6 +31,7 @@ const state = {
     { team_id: 't4', user_id: 'u7', display_name: 'kev' }, { team_id: 't4', user_id: 'u8', display_name: 'sam' },
   ],
   drafts: [],
+  predictions: [],
   picks: [],
   powerPlays: [],
 }
@@ -71,7 +72,7 @@ function botChoice(d, seed) {
 
 // --- tonight: the room is open, you're on the clock ------------------------------
 const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
-const LIVE_WEEK = state.weeks.find(w => w.number === 3)
+const LIVE_WEEK = state.weeks.find(w => w.number === 5)
 openDraft(LIVE_WEEK)
 let botTimer = null
 function scheduleBots() {
@@ -107,7 +108,7 @@ export const demoApi = {
   async loadMyLeagues() { return clone([state.league]) },
   async loadLeague() {
     await wait()
-    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, myTeam: state.teams[0], isCommissioner: true })
+    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, predictions: state.predictions, myTeam: state.teams[0], isCommissioner: true })
   },
   async startDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   async makePick(_l, week_id, couple_id) {
@@ -123,6 +124,7 @@ export const demoApi = {
     if (nowMs() < new Date(d.pick_deadline_at).getTime()) throw new Error('Clock has not run out yet')
     applyPick(d, randomAvailable(d), true); emit(); scheduleBots()
   },
+  async makeCall(_l, week_id, couple_id, score) { state.predictions = state.predictions.filter(p => !(p.team_id === 't1' && p.week_id === week_id)); state.predictions.push({ team_id: 't1', week_id, couple_id, predicted_score: score }); emit() },
   async resetDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   subscribe(_l, cb) { listeners.add(cb); return () => listeners.delete(cb) },
   async updateTeam(teamId, patch) { Object.assign(state.teams.find(t => t.id === teamId), patch) },
