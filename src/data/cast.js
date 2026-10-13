@@ -11,7 +11,7 @@ export const WEEKS = [
   { number: 3,  title: 'Viral Hits Night',  tuesday: '2026-09-22' },
   { number: 4,  title: 'Yacht Rock Night',  tuesday: '2026-09-29' },
   { number: 5,  title: 'Mariah Carey Night', tuesday: '2026-10-06' },
-  { number: 6,  title: 'Week 6',            tuesday: '2026-10-13' },
+  { number: 6,  title: 'Super Bowl Night',  tuesday: '2026-10-13' },
   { number: 7,  title: 'Week 7',            tuesday: '2026-10-20' },
   { number: 8,  title: 'Week 8',            tuesday: '2026-10-27' },
   { number: 9,  title: 'Week 9',            tuesday: '2026-11-03' },
@@ -41,6 +41,7 @@ export const SCORES = [
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
   { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
   { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
+  { week: 5, couple: 1, total: 24 }, { week: 5, couple: 2, total: 24 }, { week: 5, couple: 3, total: 23 }, { week: 5, couple: 4, total: 20 }, { week: 5, couple: 5, total: 21 }, { week: 5, couple: 6, total: 24 }, { week: 5, couple: 7, total: 21 }, { week: 5, couple: 9, total: 21 }, { week: 5, couple: 11, total: 13 }, { week: 5, couple: 12, total: 25 }, { week: 5, couple: 13, total: 19 }, { week: 5, couple: 14, total: 21, eliminated: true },
 ]
 
 export const COUPLES = [
@@ -109,7 +110,7 @@ export const COUPLES = [
     comp: 'Alix Earle, S34', vote_engine: '1.3M followers, a national comedy tour, NBC Olympics gig',
     bio: "\"Fibula\" to his followers, co-host of Brooke and Connor Make a Podcast, and a working stand-up who put Ilana Glazer on his tour. Comedians survive on this show because the packages are funny and the votes follow. Rylee Arnold has been to the finale already and picks choreography like she's trying to end careers. Wildly unknown floor.",
     red_flag: 'If he\'s bad, he will be bad on purpose for the bit, and the judges have no idea how to score a bit.' },
-  { id: 14, celeb: 'Ciara Miller', pro: 'Brandon Armstrong', known_for: 'Summer House', tier: 3,
+  { id: 14, celeb: 'Ciara Miller', pro: 'Brandon Armstrong', known_for: 'Summer House', tier: 3, eliminated_week: 5,
     position: 'Bravo · momentum play', grade: 'C+', floor: 15, ceiling: 25,
     comp: 'Ariana Madix, S32 finalist', vote_engine: 'Summer House, plus a 2026 betrayal storyline the internet took personally',
     bio: "Summer House's most influential export, per Bravo, and this year the wronged party in a public ex-and-friend situation that turned a whole fanbase into a voting bloc. The Ariana Madix precedent is instructive: Bravo women with a grievance and a good pro make the finale. Brandon Armstrong has never had a partner with this much narrative wind at her back.",
@@ -145,5 +146,14 @@ export const THEMES = {
     calls: ['Dahling, hold on, she\'s thinking…', 'Hitting the whistle note for pick one…', 'She doesn\'t know her. Or her. Or him.', 'It\'s not even Thanksgiving, but…', 'Fanning herself. Diva business.', 'Releasing the butterflies…', 'Festive. Very festive.', 'Lambs, your attention please…'],
     done: 'The Elusive Chanteuse has spoken.',
     tint: 'linear-gradient(120deg, #FFE3F1, #FFF3C7, #E6DAFF)',
+  },
+  6: {
+    name: 'Super Bowl Night',
+    scene: 'superbowl',
+    headline: 'Kickoff for the draft order',
+    moves: ['🏈', '🏟️', '🧀', '🎺', '🍗', '📣', '🪖', '🏆'],
+    calls: ['Coin toss is in the air…', 'Flag on the play. Picking it up.', 'Going for it on fourth and long…', 'The halftime show is a slideshow of Guillermo.', 'Booth review: the ruling on the field stands.', 'Timeout, New York. All of New York.'],
+    done: 'Final whistle. Picks are on the clock.',
+    tint: 'linear-gradient(120deg, #DCEBFF, #E8F7E4, #FFF1D6)',
   },
 }

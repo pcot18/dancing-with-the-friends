@@ -5,7 +5,7 @@ import DanceOff from './DanceOff.jsx'
 import { THEMES } from '../data/cast.js'
 
 export default function DraftRoom() {
-  const { api, league, teams, members, couples, scores, picks, predictions, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
+  const { api, league, teams, members, couples, scores, picks, predictions, gauntlet, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
   const theme = THEMES[weekInfo.week.number]
   const { week, phase, draft, msToOpen, roomOpen } = weekInfo
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
@@ -63,7 +63,7 @@ export default function DraftRoom() {
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
             <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
@@ -147,6 +147,7 @@ export default function DraftRoom() {
 
       {/* ---------- ELIMINATION CALL ---------- */}
       {phase === 'window' && myTeam && <EliminationCall />}
+      {phase === 'window' && myTeam && week.number >= 6 && <Gauntlet />}
 
       {/* rosters (any phase once picks exist) */}
       {weekPicks.length > 0 && (
@@ -223,6 +224,50 @@ function EliminationCall() {
         <button className="btn" disabled={busy || !couple || score === ''}>{mine ? 'Update call' : 'Lock it in'}</button>
       </form>
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your call: <b>{couples.find(c => c.id === mine.couple_id)?.celeb}</b> goes home with a <b>{Number(mine.predicted_score)}</b>. You can change it until the scores are in.</p>}
+    </section>
+  )
+}
+
+function Gauntlet() {
+  const { api, league, couples, teams, gauntlet, myTeam, weekInfo, reload, showToast } = useData()
+  const { week } = weekInfo
+  const st = league.settings || {}
+  const target = couples.find(c => c.id === (st.gauntlet_target_couple ?? 11))
+  const stake = st.gauntlet_stake ?? 5, bonus = st.gauntlet_bottom_points ?? 10
+  const mine = gauntlet.find(g => g.team_id === myTeam.id && g.week_id === week.id)
+  const [bottom, setBottom] = useState(mine?.bottom_ids || [])
+  const [out, setOut] = useState(mine ? (mine.target_out ? 'out' : 'safe') : '')
+  const [busy, setBusy] = useState(false)
+  const alive = couples.filter(c => !c.eliminated_week)
+  const made = gauntlet.filter(g => g.week_id === week.id).length
+  const toggle = (id) => setBottom(b => b.includes(id) ? b.filter(x => x !== id) : b.length < 3 ? [...b, id] : b)
+  async function save() {
+    setBusy(true)
+    try { await api.makeGauntlet(league.id, week.id, bottom, out === 'out'); showToast('Gauntlet locked. Hidden until the scores go in.'); reload() }
+    catch (e) { showToast(e.message, true) } finally { setBusy(false) }
+  }
+  return (
+    <section className="card" style={{ borderColor: 'var(--bad)' }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>🥊 The {target?.celeb.split(' ')[0] || 'Guillermo'} Gauntlet</h2>
+        <span className="pill" style={{ background: 'var(--bad)', color: '#fff', borderColor: 'transparent' }}>{stake} pts on the line</span>
+      </div>
+      <p className="small muted"><b>Part one:</b> tap the three couples that will be standing in the bottom three when the lights go red. Nail all three and it's +{bonus}. <b>Part two:</b> does {target?.celeb} finally go home tonight? Everyone stakes {stake} points. The side that's right splits the losers' stakes. If the whole league votes the same way, nothing changes hands. {made} of {teams.length} teams have run it.</p>
+      <div className="row" style={{ marginTop: 8, gap: 6 }}>
+        {alive.map(c => (
+          <button key={c.id} type="button" onClick={() => toggle(c.id)} className="couple-chip"
+            style={{ cursor: 'pointer', borderColor: bottom.includes(c.id) ? 'var(--bad)' : undefined, background: bottom.includes(c.id) ? '#FDE2E6' : undefined }}>
+            <span className="av" style={bottom.includes(c.id) ? { background: 'var(--bad)' } : undefined}>{initials(c)}</span>{c.celeb}
+          </button>
+        ))}
+      </div>
+      <div className="row" style={{ marginTop: 12, gap: 8 }}>
+        <span className="small"><b>{target?.celeb}:</b></span>
+        <button type="button" className={`btn small${out === 'out' ? '' : ' ghost'}`} onClick={() => setOut('out')}>Goes home tonight</button>
+        <button type="button" className={`btn small blue${out === 'safe' ? '' : ' ghost'}`} onClick={() => setOut('safe')}>Survives, somehow</button>
+        <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || bottom.length !== 3 || !out} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
+      </div>
+      {mine && <p className="small muted" style={{ marginTop: 8 }}>Your Gauntlet: bottom three <b>{mine.bottom_ids.map(id => couples.find(c => c.id === id)?.celeb.split(' ')[0]).join(', ')}</b>; {target?.celeb.split(' ')[0]} <b>{mine.target_out ? 'goes home' : 'survives'}</b>. Changeable until the scores are in.</p>}
     </section>
   )
 }

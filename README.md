@@ -17,7 +17,8 @@ Static React app on GitHub Pages, Supabase for login and data. Costs nothing to 
 - **Crunch time.** The first week there are fewer couples than teams, everyone picks exactly one, duplicates allowed, points split among owners.
 - **The Snipe** (one per team per season): during the snipe window, hand a rival one of your drafted couples and take one of theirs. Sniped couples can't be sniped back that week.
 - **The Elimination Call** (every week, after the draft): each team guesses who goes home and that couple's judges' score. Both right = +10 that week (`elim_call_points`; set `elim_call_requires_score` false to award it for the couple alone). Calls are hidden until scores go in.
-- **Draft-night themes.** `THEMES` in `src/data/cast.js` restyles the dance-off per week (image in `/public`, commentary lines, headline). Week 5 is Mariah Carey Night.
+- **The Guillermo Gauntlet** (week 6 on, after the draft): each team names the three couples that will land in the bottom three (+10 if exactly right; the commissioner enters the announced bottom three on the Commish tab) and votes whether Guillermo goes home, staking 5 points. The correct side splits the losers' stakes; a unanimous vote exchanges nothing. (`gauntlet_bottom_points`, `gauntlet_stake`, `gauntlet_target_couple`.)
+- **Draft-night themes.** `THEMES` in `src/data/cast.js` restyles the dance-off per week (image in `/public`, commentary lines, headline). Week 5 is Mariah Carey Night; week 6 is Super Bowl Night (`src/screens/FootballShow.jsx`, 22-second reveal via `reveal_seconds`).
 - **Standings.** Season points, then weekly wins.
 
 All the numbers live in `leagues.settings` (JSON) so a league can change them.
@@ -70,7 +71,7 @@ src/
   lib/wikipedia.js      score auto-fill
   data/cast.js          Season 35 cast + scouting copy
 supabase/
-  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired · 0004 dance-off + random order · 0005 commissioner clock · 0006 elimination call
+  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired · 0004 dance-off + random order · 0005 commissioner clock · 0006 elimination call · 0007 gauntlet
   seed.sql                     generated from src/data/cast.js
 ```
 

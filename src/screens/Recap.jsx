@@ -41,6 +41,7 @@ export default function Recap() {
                     <td className="num"><b>{fmtPts(p.adj)}</b></td>
                   </tr>
                 ))}
+                {w.gauntlet && <tr><td colSpan={2} className="small" style={{ color: w.gauntlet.bonus > 0 ? 'var(--good)' : w.gauntlet.bonus < 0 ? 'var(--bad)' : 'var(--muted)' }}>🥊 Bottom three {w.gauntlet.bottom.map(c => c?.celeb.split(' ')[0]).join('/')}{w.gauntlet.bottomScored ? (w.gauntlet.bottomHit ? ' ✓' : ' ✗') : ''} · voted {w.gauntlet.targetOut ? 'out' : 'safe'}{w.gauntlet.unanimous ? ' (unanimous, no stakes)' : w.gauntlet.vote > 0 ? ' ✓' : ' ✗'}</td><td className="num" style={{ color: w.gauntlet.bonus > 0 ? 'var(--good)' : w.gauntlet.bonus < 0 ? 'var(--bad)' : 'var(--muted)' }}>{w.gauntlet.bonus > 0 ? '+' : ''}{fmtPts(w.gauntlet.bonus)}</td></tr>}
                 {w.call && <tr><td colSpan={2} className="small" style={{ color: w.call.hit ? 'var(--good)' : 'var(--muted)' }}>☎️ Called {w.call.couple?.celeb} at {w.call.predicted}{w.call.hit ? ' · nailed it' : w.call.coupleRight ? ' · right couple, wrong score' : ' · nope'}</td><td className="num" style={{ color: w.call.hit ? 'var(--good)' : 'var(--muted)' }}>{w.call.hit ? `+${w.call.bonus}` : '0'}</td></tr>}
               </tbody>
             </table>

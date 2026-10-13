@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { THEMES } from '../data/cast.js'
+import FootballShow from './FootballShow.jsx'
 
 // Scramble the whole field, then reveal the draft order from last pick to first.
 // Every client renders this off the draft's started_at, so the room stays in sync.
@@ -15,6 +16,7 @@ export default function DanceOff({ draft, teams, members, now, week }) {
   const elapsed = Math.max(0, now.getTime() - t0)
   const revealMs = 1100                          // per slot, revealed last → first
   const scrambleMs = Math.max(2500, total - revealMs * n - 600)
+  const showing = theme.scene === 'superbowl' && elapsed < scrambleMs
   // how many slots (from the bottom) are locked in
   const locked = elapsed < scrambleMs ? 0 : Math.min(n, Math.floor((elapsed - scrambleMs) / revealMs) + 1)
   const lockedIds = new Set(order.slice(n - locked))
@@ -51,6 +53,7 @@ export default function DanceOff({ draft, teams, members, now, week }) {
           <p className="muted" style={{ margin: 0, minHeight: '1.5em' }}>{done ? theme.done : call}</p>
         </div>
       </div>
+      {showing && <FootballShow t={elapsed} sceneMs={scrambleMs / 3} />}
       <ol className="danceoff-list">
         {rows.map(r => (
           <li key={r.slot} className={`danceoff-row${r.revealed ? ' revealed' : ''}`}>

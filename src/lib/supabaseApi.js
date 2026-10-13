@@ -58,18 +58,19 @@ export const supabaseApi = {
     const league = ok(await supabase.from('leagues').select('*').eq('id', leagueId).single())
     const teams = ok(await supabase.from('teams').select('*').eq('league_id', leagueId).order('created_at'))
     const teamIds = teams.map(t => t.id)
-    const [members, profiles, picks, powerPlays, drafts, predictions] = await Promise.all([
+    const [members, profiles, picks, powerPlays, drafts, predictions, gauntlet] = await Promise.all([
       ok(await supabase.from('team_members').select('*').in('team_id', teamIds)),
       ok(await supabase.from('profiles').select('*')),
       ok(await supabase.from('picks').select('*').in('team_id', teamIds)),
       ok(await supabase.from('power_plays').select('*').in('team_id', teamIds)),
       ok(await supabase.from('drafts').select('*').eq('league_id', leagueId)),
       ok(await supabase.from('predictions').select('*').in('team_id', teamIds)),
+      ok(await supabase.from('gauntlet').select('*').in('team_id', teamIds)),
     ])
     const nameOf = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]))
     const membersNamed = members.map(m => ({ ...m, display_name: nameOf[m.user_id] || 'friend' }))
     const myTeam = teams.find(t => members.some(m => m.team_id === t.id && m.user_id === user.id)) || null
-    return { league, teams, members: membersNamed, picks, powerPlays, drafts, predictions, myTeam, isCommissioner: league.commissioner === user.id }
+    return { league, teams, members: membersNamed, picks, powerPlays, drafts, predictions, gauntlet, myTeam, isCommissioner: league.commissioner === user.id }
   },
 
   // --- live draft ---
@@ -77,6 +78,8 @@ export const supabaseApi = {
   async makePick(league_id, week_id, couple_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: couple_id })) },
   async autoPick(league_id, week_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: null })) },
   async makeCall(league_id, week_id, couple_id, score) { return ok(await supabase.rpc('make_call', { p_league: league_id, p_week: week_id, p_couple: couple_id, p_score: score })) },
+  async makeGauntlet(league_id, week_id, bottom, out) { return ok(await supabase.rpc('make_gauntlet', { p_league: league_id, p_week: week_id, p_bottom: bottom, p_out: out })) },
+  async setBottomThree(week_id, ids) { return ok(await supabase.from('weeks').update({ bottom_three: ids }).eq('id', week_id)) },
   async resetDraft(league_id, week_id) { return ok(await supabase.rpc('reset_draft', { p_league: league_id, p_week: week_id })) },
   /** Fires cb whenever drafts/picks/power_plays change for this league. Returns unsubscribe. */
   subscribe(league_id, cb) {
@@ -85,6 +88,7 @@ export const supabaseApi = {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, cb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'power_plays' }, cb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, cb)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gauntlet' }, cb)
       .subscribe()
     const poll = setInterval(cb, 2500)   // belt and braces: realtime can drop on phones (and on brand-new projects)
     return () => { clearInterval(poll); supabase.removeChannel(ch) }

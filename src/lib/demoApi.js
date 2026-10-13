@@ -4,7 +4,7 @@
 import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
 import { DEFAULT_SETTINGS, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const DEMO_BASE = new Date('2026-10-06T23:32:00Z').getTime()
+const DEMO_BASE = new Date('2026-10-13T23:32:00Z').getTime()
 const LOADED = Date.now()
 const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
 const NOW = new Date(DEMO_BASE)
@@ -32,6 +32,7 @@ const state = {
   ],
   drafts: [],
   predictions: [],
+  gauntlet: [],
   picks: [],
   powerPlays: [],
 }
@@ -46,7 +47,7 @@ function openDraft(week) {
   const order = [...state.teams].map(t => ({ t, r: Math.random() })).sort((a, b) => a.r - b.r).map(x => x.t.id)   // random every week, like the SQL
   const a = alive(); const crunch = isCrunch(a.length, state.teams.length)
   const d = { league_id: state.league.id, week_id: week.id, status: 'live', order_ids: order, roster: crunch ? 1 : rosterSize(a.length, state.teams.length), crunch,
-    current_index: 0, pick_seconds: 60, reveal_seconds: 10, pick_deadline_at: new Date(nowMs() + 70000).toISOString(), started_at: new Date(nowMs()).toISOString(), finished_at: null }
+    current_index: 0, pick_seconds: 60, reveal_seconds: 22, pick_deadline_at: new Date(nowMs() + 82000).toISOString(), started_at: new Date(nowMs()).toISOString(), finished_at: null }
   state.drafts = state.drafts.filter(x => x.week_id !== week.id); state.drafts.push(d)
   state.picks = state.picks.filter(p => p.week_id !== week.id)
   return d
@@ -72,7 +73,7 @@ function botChoice(d, seed) {
 
 // --- tonight: the room is open, you're on the clock ------------------------------
 const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
-const LIVE_WEEK = state.weeks.find(w => w.number === 5)
+const LIVE_WEEK = state.weeks.find(w => w.number === 6)
 openDraft(LIVE_WEEK)
 let botTimer = null
 function scheduleBots() {
@@ -108,7 +109,7 @@ export const demoApi = {
   async loadMyLeagues() { return clone([state.league]) },
   async loadLeague() {
     await wait()
-    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, predictions: state.predictions, myTeam: state.teams[0], isCommissioner: true })
+    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, predictions: state.predictions, gauntlet: state.gauntlet, myTeam: state.teams[0], isCommissioner: true })
   },
   async startDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   async makePick(_l, week_id, couple_id) {
@@ -125,6 +126,8 @@ export const demoApi = {
     applyPick(d, randomAvailable(d), true); emit(); scheduleBots()
   },
   async makeCall(_l, week_id, couple_id, score) { state.predictions = state.predictions.filter(p => !(p.team_id === 't1' && p.week_id === week_id)); state.predictions.push({ team_id: 't1', week_id, couple_id, predicted_score: score }); emit() },
+  async makeGauntlet(_l, week_id, bottom, out) { state.gauntlet = state.gauntlet.filter(g => !(g.team_id === 't1' && g.week_id === week_id)); state.gauntlet.push({ team_id: 't1', week_id, bottom_ids: bottom, target_out: out }); emit() },
+  async setBottomThree(week_id, ids) { state.weeks.find(w => w.id === week_id).bottom_three = ids },
   async resetDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   subscribe(_l, cb) { listeners.add(cb); return () => listeners.delete(cb) },
   async updateTeam(teamId, patch) { Object.assign(state.teams.find(t => t.id === teamId), patch) },

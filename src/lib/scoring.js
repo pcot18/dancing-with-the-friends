@@ -6,6 +6,9 @@ export const DEFAULT_SETTINGS = {
   snipes_per_season: 1,
   elim_call_points: 10,
   elim_call_requires_score: true,
+  gauntlet_bottom_points: 10,
+  gauntlet_stake: 5,
+  gauntlet_target_couple: 11,
 }
 
 export function normalizeScore(score, week) {
@@ -18,7 +21,7 @@ export function normalizeScore(score, week) {
  * TeamLine = { team, total, weeklyWins, weeks: { [weekId]: WeekLine } }
  * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], won }
  */
-export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [] }) {
+export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [] }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
@@ -39,7 +42,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
   const lines = {}
   for (const t of teams) {
     lines[t.id] = { team: t, total: 0, weeklyWins: 0, weeks: {} }
-    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], call: null, won: false }
+    for (const w of weeks) lines[t.id].weeks[w.id] = { points: 0, picks: [], call: null, gauntlet: null, won: false }
   }
 
   for (const p of picks) {
@@ -69,6 +72,27 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     const hit = coupleRight && (scoreRight || !settings.elim_call_requires_score)
     line.weeks[pr.week_id].call = { couple: coupleById[pr.couple_id], predicted: Number(pr.predicted_score), coupleRight, scoreRight, hit, bonus: hit ? settings.elim_call_points : 0 }
     if (hit) line.weeks[pr.week_id].points += settings.elim_call_points
+  }
+
+  // Guillermo Gauntlet: bottom-three bonus + staked vote
+  const byWeek = {}
+  for (const g of gauntlet) { if (lines[g.team_id] && weeksScored.includes(g.week_id)) (byWeek[g.week_id] ||= []).push(g) }
+  for (const [wid, gs] of Object.entries(byWeek)) {
+    const week = weekById[wid]
+    const actualOut = !!scoreMap[scoreKey(wid, settings.gauntlet_target_couple)]?.eliminated
+    const sides = new Set(gs.map(g => g.target_out))
+    const winners = gs.filter(g => g.target_out === actualOut).length, losers = gs.length - winners
+    const real = (week.bottom_three || []).slice().sort((a, b) => a - b).join(',')
+    for (const g of gs) {
+      const mine = g.bottom_ids.slice().sort((a, b) => a - b).join(',')
+      const bottomHit = real.length > 0 && mine === real
+      let vote = 0
+      if (sides.size > 1) vote = g.target_out === actualOut ? settings.gauntlet_stake * losers / winners : -settings.gauntlet_stake
+      vote = Math.round(vote * 100) / 100
+      const bonus = (bottomHit ? settings.gauntlet_bottom_points : 0) + vote
+      lines[g.team_id].weeks[wid].gauntlet = { bottom: g.bottom_ids.map(id => coupleById[id]), bottomHit, bottomScored: real.length > 0, targetOut: g.target_out, actualOut, unanimous: sides.size < 2, vote, bonus }
+      lines[g.team_id].weeks[wid].points += bonus
+    }
   }
 
   for (const t of teams) {
