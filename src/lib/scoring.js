@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS = {
   elim_call_points: 10,
   elim_call_requires_score: true,
   gauntlet_bottom_points: 10,
-  gauntlet_stake: 5,
+  gauntlet_stake: 10,
   gauntlet_target_couple: 11,
 }
 

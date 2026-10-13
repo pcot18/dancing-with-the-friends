@@ -146,7 +146,7 @@ export default function DraftRoom() {
       )}
 
       {/* ---------- ELIMINATION CALL ---------- */}
-      {phase === 'window' && myTeam && <EliminationCall />}
+      {phase === 'window' && myTeam && week.number < 6 && <EliminationCall />}{/* retired from week 6; week-5 calls still count */}
       {phase === 'window' && myTeam && week.number >= 6 && <Gauntlet />}
 
       {/* rosters (any phase once picks exist) */}
@@ -233,7 +233,7 @@ function Gauntlet() {
   const { week } = weekInfo
   const st = league.settings || {}
   const target = couples.find(c => c.id === (st.gauntlet_target_couple ?? 11))
-  const stake = st.gauntlet_stake ?? 5, bonus = st.gauntlet_bottom_points ?? 10
+  const stake = st.gauntlet_stake ?? 10, bonus = st.gauntlet_bottom_points ?? 10
   const mine = gauntlet.find(g => g.team_id === myTeam.id && g.week_id === week.id)
   const [bottom, setBottom] = useState(mine?.bottom_ids || [])
   const [out, setOut] = useState(mine ? (mine.target_out ? 'out' : 'safe') : '')
