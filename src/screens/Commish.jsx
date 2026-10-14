@@ -12,6 +12,7 @@ export default function Commish() {
   const [busy, setBusy] = useState(false)
   const [wiki, setWiki] = useState(null)
   const [bottom3, setBottom3] = useState(week.bottom_three || [])
+  const [bottomPts, setBottomPts] = useState(week.bottom_points ?? '')
   const canScore = profile?.is_admin
 
   // couples eligible this week: alive before this week
@@ -38,7 +39,7 @@ export default function Commish() {
       if (!out.length) throw new Error('No scores entered')
       const elim = out.filter(o => o.eliminated).map(o => o.couple_id)
       await api.saveScores({ ...week, judge_count: judges }, out, elim)
-      if (week.number >= 6) await api.setBottomThree(week.id, bottom3.length === 3 ? bottom3 : null)
+      if (week.number >= 6) await api.setBottomThree(week.id, bottom3.length ? bottom3 : null, bottomPts === '' ? null : Number(bottomPts))
       showToast(`${week.title} saved. ${elim.length ? elim.length + ' sent home.' : 'Nobody went home.'}`); reload()
     } catch (e) { showToast(e.message, true) } finally { setBusy(false) }
   }
@@ -105,7 +106,12 @@ export default function Commish() {
             <div className="row" style={{ marginTop: 6, gap: 6 }}>
               {eligible.map(c => <button key={c.id} type="button" disabled={!canScore} className="couple-chip" onClick={() => setBottom3(b => b.includes(c.id) ? b.filter(x => x !== c.id) : b.length < 3 ? [...b, c.id] : b)} style={{ cursor: 'pointer', borderColor: bottom3.includes(c.id) ? 'var(--bad)' : undefined, background: bottom3.includes(c.id) ? '#FDE2E6' : undefined }}>{c.celeb}</button>)}
             </div>
-            <p className="small muted">{bottom3.length}/3 picked. Leave it empty if the show didn't announce one.</p>
+            <div className="row" style={{ marginTop: 8, gap: 8, alignItems: 'center' }}>
+              <label className="small muted" htmlFor="bottom-pts">Payout this week</label>
+              <input id="bottom-pts" type="number" min="0" step="0.5" value={bottomPts} disabled={!canScore} onChange={e => setBottomPts(e.target.value)} placeholder={String(league?.settings?.gauntlet_bottom_points ?? 10)} style={{ width: 90 }} />
+              <span className="small muted">blank = league default</span>
+            </div>
+            <p className="small muted">{bottom3.length} picked. The show can spotlight fewer than three; a team hits when every announced couple is among its picks. Leave it empty if nothing was announced.</p>
           </div>
         )}
         <div className="row" style={{ marginTop: 14, justifyContent: 'flex-end' }}>

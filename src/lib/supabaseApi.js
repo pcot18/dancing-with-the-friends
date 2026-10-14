@@ -79,7 +79,7 @@ export const supabaseApi = {
   async autoPick(league_id, week_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: null })) },
   async makeCall(league_id, week_id, couple_id, score) { return ok(await supabase.rpc('make_call', { p_league: league_id, p_week: week_id, p_couple: couple_id, p_score: score })) },
   async makeGauntlet(league_id, week_id, bottom, out) { return ok(await supabase.rpc('make_gauntlet', { p_league: league_id, p_week: week_id, p_bottom: bottom, p_out: out })) },
-  async setBottomThree(week_id, ids) { return ok(await supabase.from('weeks').update({ bottom_three: ids }).eq('id', week_id)) },
+  async setBottomThree(week_id, ids, points = null) { return ok(await supabase.from('weeks').update({ bottom_three: ids, bottom_points: points }).eq('id', week_id)) },
   async resetDraft(league_id, week_id) { return ok(await supabase.rpc('reset_draft', { p_league: league_id, p_week: week_id })) },
   /** Fires cb whenever drafts/picks/power_plays change for this league. Returns unsubscribe. */
   subscribe(league_id, cb) {

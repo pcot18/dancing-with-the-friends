@@ -82,15 +82,16 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     const actualOut = !!scoreMap[scoreKey(wid, settings.gauntlet_target_couple)]?.eliminated
     const sides = new Set(gs.map(g => g.target_out))
     const winners = gs.filter(g => g.target_out === actualOut).length, losers = gs.length - winners
-    const real = (week.bottom_three || []).slice().sort((a, b) => a - b).join(',')
+    const real = week.bottom_three || []
+    const bottomPts = week.bottom_points != null ? Number(week.bottom_points) : settings.gauntlet_bottom_points
     for (const g of gs) {
-      const mine = g.bottom_ids.slice().sort((a, b) => a - b).join(',')
-      const bottomHit = real.length > 0 && mine === real
+      // hit = every couple the show put in the spotlight is among your three (the show can announce fewer than three)
+      const bottomHit = real.length > 0 && real.every(id => g.bottom_ids.includes(id))
       let vote = 0
       if (sides.size > 1) vote = g.target_out === actualOut ? settings.gauntlet_stake * losers / winners : -settings.gauntlet_stake
       vote = Math.round(vote * 100) / 100
-      const bonus = (bottomHit ? settings.gauntlet_bottom_points : 0) + vote
-      lines[g.team_id].weeks[wid].gauntlet = { bottom: g.bottom_ids.map(id => coupleById[id]), bottomHit, bottomScored: real.length > 0, targetOut: g.target_out, actualOut, unanimous: sides.size < 2, vote, bonus }
+      const bonus = (bottomHit ? bottomPts : 0) + vote
+      lines[g.team_id].weeks[wid].gauntlet = { bottom: g.bottom_ids.map(id => coupleById[id]), bottomHit, bottomScored: real.length > 0, bottomPts, targetOut: g.target_out, actualOut, unanimous: sides.size < 2, vote, bonus }
       lines[g.team_id].weeks[wid].points += bonus
     }
   }

@@ -127,7 +127,7 @@ export const demoApi = {
   },
   async makeCall(_l, week_id, couple_id, score) { state.predictions = state.predictions.filter(p => !(p.team_id === 't1' && p.week_id === week_id)); state.predictions.push({ team_id: 't1', week_id, couple_id, predicted_score: score }); emit() },
   async makeGauntlet(_l, week_id, bottom, out) { state.gauntlet = state.gauntlet.filter(g => !(g.team_id === 't1' && g.week_id === week_id)); state.gauntlet.push({ team_id: 't1', week_id, bottom_ids: bottom, target_out: out }); emit() },
-  async setBottomThree(week_id, ids) { state.weeks.find(w => w.id === week_id).bottom_three = ids },
+  async setBottomThree(week_id, ids, points = null) { Object.assign(state.weeks.find(w => w.id === week_id), { bottom_three: ids, bottom_points: points }) },
   async resetDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   subscribe(_l, cb) { listeners.add(cb); return () => listeners.delete(cb) },
   async updateTeam(teamId, patch) { Object.assign(state.teams.find(t => t.id === teamId), patch) },
