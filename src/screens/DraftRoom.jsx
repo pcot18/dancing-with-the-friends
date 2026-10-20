@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useData, CoupleChip, TeamName, Sparkles, fmtCountdown, fmtET, initials } from '../ui.jsx'
 import { drafterAt, totalPicks, rosterSize, isCrunch } from '../lib/scoring.js'
 import DanceOff from './DanceOff.jsx'
+import { Tombstones } from './Graveyard.jsx'
 import { THEMES } from '../data/cast.js'
 
 export default function DraftRoom() {
@@ -63,18 +64,19 @@ export default function DraftRoom() {
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'graveyard' ? '🪦 Wake the dead' : theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
             <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
       )}
 
       {/* ---------- DANCE-OFF ---------- */}
-      {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} week={week} />}
+      {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} week={week} couples={couples} />}
 
       {/* ---------- DRAFTING ---------- */}
       {phase === 'drafting' && draft && !revealing && (
         <>
+          {theme?.scene === 'graveyard' && <Tombstones strip couples={couples} count={10} />}
           <section className={`hero`} style={isMe ? { background: 'linear-gradient(120deg, var(--pink-soft), var(--gold-soft))', borderColor: 'var(--pink-deep)' } : undefined}>
             {isMe && <Sparkles n={10} seed={9} />}
             <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -147,7 +149,8 @@ export default function DraftRoom() {
 
       {/* ---------- ELIMINATION CALL ---------- */}
       {phase === 'window' && myTeam && week.number < 6 && <EliminationCall />}{/* retired from week 6; week-5 calls still count */}
-      {phase === 'window' && myTeam && week.number >= 6 && <Gauntlet />}
+      {phase === 'window' && myTeam && week.number === 6 && <Gauntlet />}
+      {phase === 'window' && myTeam && week.number >= 7 && <LastRites />}
 
       {/* rosters (any phase once picks exist) */}
       {weekPicks.length > 0 && (
@@ -268,6 +271,59 @@ function Gauntlet() {
         <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || bottom.length !== 3 || !out} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
       </div>
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your Gauntlet: bottom three <b>{mine.bottom_ids.map(id => couples.find(c => c.id === id)?.celeb.split(' ')[0]).join(', ')}</b>; {target?.celeb.split(' ')[0]} <b>{mine.target_out ? 'goes home' : 'survives'}</b>. Changeable until the scores are in.</p>}
+    </section>
+  )
+}
+
+// Dedication Night on: four prop questions, each worth last_rites_points.
+function LastRites() {
+  const { api, league, couples, teams, lastRites = [], myTeam, weekInfo, reload, showToast } = useData()
+  const { week } = weekInfo
+  const each = league.settings?.last_rites_points ?? 4
+  const mine = lastRites.find(r => r.team_id === myTeam.id && r.week_id === week.id)
+  const [a, setA] = useState({ high: mine?.high_id ?? null, low: mine?.low_id ?? null, out: mine?.out_id ?? null, cry: mine ? (mine.judge_cries ? 'yes' : 'no') : '' })
+  const [busy, setBusy] = useState(false)
+  const alive = couples.filter(c => !c.eliminated_week)
+  const made = lastRites.filter(r => r.week_id === week.id).length
+  const ready = a.high && a.low && a.out && a.cry
+  async function save() {
+    setBusy(true)
+    try { await api.makeLastRites(league.id, week.id, { high: a.high, low: a.low, out: a.out, cry: a.cry === 'yes' }); showToast('Last Rites read. Hidden until the scores go in.'); reload() }
+    catch (e) { showToast(e.message, true) } finally { setBusy(false) }
+  }
+  const Pick = ({ k, label, hint }) => (
+    <div style={{ marginTop: 12 }}>
+      <div className="eyebrow">{label} <span className="muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>· {hint}</span></div>
+      <div className="row" style={{ marginTop: 6, gap: 6 }}>
+        {alive.map(c => (
+          <button key={c.id} type="button" onClick={() => setA(x => ({ ...x, [k]: c.id }))} className="couple-chip"
+            style={{ cursor: 'pointer', borderColor: a[k] === c.id ? 'var(--ink)' : undefined, background: a[k] === c.id ? '#E8E4F2' : undefined }}>
+            <span className="av" style={a[k] === c.id ? { background: 'var(--ink)' } : undefined}>{initials(c)}</span>{c.celeb}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+  const name = (id) => couples.find(c => c.id === id)?.celeb.split(' ')[0]
+  return (
+    <section className="card" style={{ borderColor: 'var(--ink)' }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>🪦 Last Rites</h2>
+        <span className="pill" style={{ background: 'var(--ink)', color: '#fff', borderColor: 'transparent' }}>{each} pts a question</span>
+      </div>
+      <p className="small muted">Four questions, {each} points each, no partial credit, no tears (well, one question about tears). {made} of {teams.length} teams have been read their rites.</p>
+      <Pick k="high" label="Highest score of the night" hint="ties count" />
+      <Pick k="low" label="Lowest score of the night" hint="ties count" />
+      <Pick k="out" label="Who goes home" hint="in loving memory" />
+      <div style={{ marginTop: 12 }}>
+        <div className="eyebrow">Does a judge cry? <span className="muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>· the commissioner rules on tears</span></div>
+        <div className="row" style={{ marginTop: 6, gap: 8 }}>
+          <button type="button" className={`btn small${a.cry === 'yes' ? '' : ' ghost'}`} onClick={() => setA(x => ({ ...x, cry: 'yes' }))}>😭 Yes, obviously</button>
+          <button type="button" className={`btn small blue${a.cry === 'no' ? '' : ' ghost'}`} onClick={() => setA(x => ({ ...x, cry: 'no' }))}>🧊 Dry eyes</button>
+          <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || !ready} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
+        </div>
+      </div>
+      {mine && <p className="small muted" style={{ marginTop: 8 }}>Your rites: high <b>{name(mine.high_id)}</b>, low <b>{name(mine.low_id)}</b>, going home <b>{name(mine.out_id)}</b>, judge cries <b>{mine.judge_cries ? 'yes' : 'no'}</b>. Changeable until the scores are in.</p>}
     </section>
   )
 }

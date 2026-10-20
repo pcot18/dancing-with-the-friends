@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   gauntlet_bottom_points: 10,
   gauntlet_stake: 10,
   gauntlet_target_couple: 11,
+  last_rites_points: 4,
 }
 
 export function normalizeScore(score, week) {
@@ -21,7 +22,7 @@ export function normalizeScore(score, week) {
  * TeamLine = { team, total, weeklyWins, weeks: { [weekId]: WeekLine } }
  * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], won }
  */
-export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [] }) {
+export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [], lastRites = [] }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
@@ -94,6 +95,25 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
       lines[g.team_id].weeks[wid].gauntlet = { bottom: g.bottom_ids.map(id => coupleById[id]), bottomHit, bottomScored: real.length > 0, bottomPts, targetOut: g.target_out, actualOut, unanimous: sides.size < 2, vote, bonus }
       lines[g.team_id].weeks[wid].points += bonus
     }
+  }
+
+  // Last Rites (Dedication Night on): four prop questions, each worth last_rites_points
+  for (const r of lastRites) {
+    const line = lines[r.team_id]; const week = weekById[r.week_id]
+    if (!line || !week || !weeksScored.includes(r.week_id)) continue
+    const night = scores.filter(s => s.week_id === r.week_id).map(s => ({ id: s.couple_id, n: normalizeScore(s, week), out: !!s.eliminated }))
+    const hi = Math.max(...night.map(x => x.n)), lo = Math.min(...night.map(x => x.n))
+    const n = (id) => night.find(x => x.id === id)?.n
+    const q = {
+      high: { pick: coupleById[r.high_id], hit: n(r.high_id) === hi },
+      low: { pick: coupleById[r.low_id], hit: n(r.low_id) === lo },
+      out: { pick: coupleById[r.out_id], hit: !!night.find(x => x.id === r.out_id)?.out },
+      cry: { pick: r.judge_cries, hit: week.judge_cried != null && week.judge_cried === r.judge_cries, ruled: week.judge_cried != null },
+    }
+    const hits = Object.values(q).filter(x => x.hit).length
+    const bonus = hits * settings.last_rites_points
+    line.weeks[r.week_id].rites = { ...q, hits, bonus, each: settings.last_rites_points }
+    line.weeks[r.week_id].points += bonus
   }
 
   for (const t of teams) {

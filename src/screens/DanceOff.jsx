@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { THEMES } from '../data/cast.js'
 import FootballShow from './FootballShow.jsx'
+import { Tombstones, ZombieHand } from './Graveyard.jsx'
 
 // Scramble the whole field, then reveal the draft order from last pick to first.
 // Every client renders this off the draft's started_at, so the room stays in sync.
-export default function DanceOff({ draft, teams, members, now, week }) {
+export default function DanceOff({ draft, teams, members, now, week, couples = [] }) {
   const theme = { ...THEMES.default, ...(THEMES[week?.number] || {}) }
   const MOVES = theme.moves, CALLS = theme.calls
   const img = theme.image ? `${import.meta.env.BASE_URL}${theme.image}` : null
@@ -17,6 +18,7 @@ export default function DanceOff({ draft, teams, members, now, week }) {
   const revealMs = 1100                          // per slot, revealed last → first
   const scrambleMs = Math.max(2500, total - revealMs * n - 600)
   const showing = theme.scene === 'superbowl' && elapsed < scrambleMs
+  const graveyard = theme.scene === 'graveyard'
   // how many slots (from the bottom) are locked in
   const locked = elapsed < scrambleMs ? 0 : Math.min(n, Math.floor((elapsed - scrambleMs) / revealMs) + 1)
   const lockedIds = new Set(order.slice(n - locked))
@@ -41,7 +43,8 @@ export default function DanceOff({ draft, teams, members, now, week }) {
   const done = locked >= n
 
   return (
-    <section className="hero danceoff" style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
+    <section className={`hero danceoff${graveyard ? ' graveyard' : ''}`} style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
+      {graveyard && <Tombstones couples={couples} count={9} />}
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div className="eyebrow">Draft order · {theme.name || 'dance-off'}</div>
         <span className="pill live">Live</span>
@@ -58,7 +61,9 @@ export default function DanceOff({ draft, teams, members, now, week }) {
         {rows.map(r => (
           <li key={r.slot} className={`danceoff-row${r.revealed ? ' revealed' : ''}`}>
             <span className="danceoff-slot">{r.revealed ? ordinal(r.slot) : '??'}</span>
-            <span className={`danceoff-em${r.revealed ? '' : ' dancing'}`}>{r.revealed ? r.team.emoji : MOVES[(tick + r.slot * 3) % MOVES.length]}</span>
+            {graveyard && r.revealed
+              ? <span className="danceoff-em zh-slot"><ZombieHand /><span className="zh-emoji">{r.team.emoji}</span></span>
+              : <span className={`danceoff-em${r.revealed ? '' : ' dancing'}`}>{r.revealed ? r.team.emoji : MOVES[(tick + r.slot * 3) % MOVES.length]}</span>}
             <span className={`danceoff-name${r.revealed ? '' : ' scramble'}`}>
               {r.revealed ? <>{r.team.name} <span className="small muted" style={{ fontWeight: 400 }}>{members.filter(m => m.team_id === r.team.id).map(m => m.display_name).join(' & ')}</span></> : r.team?.name}
             </span>
@@ -66,6 +71,7 @@ export default function DanceOff({ draft, teams, members, now, week }) {
           </li>
         ))}
       </ol>
+      {graveyard && <Tombstones strip couples={couples} count={10} />}
     </section>
   )
 }

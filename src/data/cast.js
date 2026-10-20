@@ -12,7 +12,7 @@ export const WEEKS = [
   { number: 4,  title: 'Yacht Rock Night',  tuesday: '2026-09-29' },
   { number: 5,  title: 'Mariah Carey Night', tuesday: '2026-10-06' },
   { number: 6,  title: 'Super Bowl Night',  tuesday: '2026-10-13' },
-  { number: 7,  title: 'Week 7',            tuesday: '2026-10-20' },
+  { number: 7,  title: 'Dedication Night',  tuesday: '2026-10-20' },
   { number: 8,  title: 'Week 8',            tuesday: '2026-10-27' },
   { number: 9,  title: 'Week 9',            tuesday: '2026-11-03' },
   { number: 10, title: 'Week 10',           tuesday: '2026-11-10' },
@@ -41,6 +41,7 @@ export const SCORES = [
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
   { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
   { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
+  { week: 6, couple: 12, total: 33, max: 40 }, { week: 6, couple: 7, total: 31, max: 40 }, { week: 6, couple: 3, total: 34, max: 40 }, { week: 6, couple: 9, total: 30, max: 40 }, { week: 6, couple: 13, total: 25, max: 40 }, { week: 6, couple: 5, total: 33, max: 40 }, { week: 6, couple: 4, total: 29, max: 40 }, { week: 6, couple: 11, total: 22, max: 40, eliminated: true }, { week: 6, couple: 1, total: 36, max: 40 }, { week: 6, couple: 2, total: 33, max: 40 }, { week: 6, couple: 6, total: 36, max: 40 },
   { week: 5, couple: 1, total: 24 }, { week: 5, couple: 2, total: 24 }, { week: 5, couple: 3, total: 23 }, { week: 5, couple: 4, total: 20 }, { week: 5, couple: 5, total: 21 }, { week: 5, couple: 6, total: 24 }, { week: 5, couple: 7, total: 21 }, { week: 5, couple: 9, total: 21 }, { week: 5, couple: 11, total: 13 }, { week: 5, couple: 12, total: 25 }, { week: 5, couple: 13, total: 19 }, { week: 5, couple: 14, total: 21, eliminated: true },
 ]
 
@@ -95,7 +96,7 @@ export const COUPLES = [
     comp: 'Joey Fatone, S4 runner-up', vote_engine: 'Thirty years of Hanson fans, seven children',
     bio: "The middle Hanson, keys and lead vocals, famous since 1997, still touring. Musicians reliably hear the count, and keys players hear it best. Father of seven, so the \"I've never had a moment to myself\" package writes itself. Britt Stewart is a strong technician who's been waiting for a partner with rhythm.",
     red_flag: 'Hearing the beat and moving your hips on it are, tragically, different skills. Ask every guitarist who\'s ever been on this show.' },
-  { id: 11, celeb: 'Guillermo Rodriguez', pro: 'Witney Carson', known_for: 'Jimmy Kimmel Live!', tier: 3,
+  { id: 11, celeb: 'Guillermo Rodriguez', pro: 'Witney Carson', known_for: 'Jimmy Kimmel Live!', tier: 3, eliminated_week: 6,
     position: 'Fan-vote monster · low ceiling', grade: 'C+', floor: 12, ceiling: 22,
     comp: 'Bobby Bones, S27 champion, the darkest day in judging history', vote_engine: '23 years of Kimmel viewers, every Oscars red carpet',
     bio: "Discovered as a parking-lot security guard, now the most beloved man in late night. The paddles will be cruel and it will not matter, because America will vote for him until he's physically dragged from the ballroom. The half-points-if-eliminated rule was written with him in mind, in the opposite direction: he's the safest low-score pick on the board.",
@@ -155,5 +156,14 @@ export const THEMES = {
     calls: ['Coin toss is in the air…', 'Flag on the play. Picking it up.', 'Going for it on fourth and long…', 'The halftime show is a slideshow of Guillermo.', 'Booth review: the ruling on the field stands.', 'Timeout, New York. All of New York.'],
     done: 'Final whistle. Picks are on the clock.',
     tint: 'linear-gradient(120deg, #DCEBFF, #E8F7E4, #FFF1D6)',
+  },
+  7: {
+    name: 'Dedication Night',
+    scene: 'graveyard',
+    headline: 'Something is stirring under the draft order',
+    moves: ['🪦', '🧟', '🕯️', '🦇', '🕸️', '👻', '🌫️', '🥀'],
+    calls: ['This one\'s for Grandma…', 'The fog machine has a dedication too.', 'Carrie Ann is already crying.', 'Somebody\'s dancing for their dog.', 'The ground is moving. That\'s normal.', 'Bruno has risen. Bruno never left.', 'A single tear. Then a 9.', 'Shhh. Dearly beloved, we are gathered…'],
+    done: 'The dead have spoken. Rest in picks.',
+    tint: 'linear-gradient(120deg, #E6E3F0, #DCE4DD, #EFE4F3)',
   },
 }

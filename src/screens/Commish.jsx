@@ -13,6 +13,7 @@ export default function Commish() {
   const [wiki, setWiki] = useState(null)
   const [bottom3, setBottom3] = useState(week.bottom_three || [])
   const [bottomPts, setBottomPts] = useState(week.bottom_points ?? '')
+  const [cried, setCried] = useState(week.judge_cried == null ? '' : week.judge_cried ? 'yes' : 'no')
   const canScore = profile?.is_admin
 
   // couples eligible this week: alive before this week
@@ -39,7 +40,8 @@ export default function Commish() {
       if (!out.length) throw new Error('No scores entered')
       const elim = out.filter(o => o.eliminated).map(o => o.couple_id)
       await api.saveScores({ ...week, judge_count: judges }, out, elim)
-      if (week.number >= 6) await api.setBottomThree(week.id, bottom3.length ? bottom3 : null, bottomPts === '' ? null : Number(bottomPts))
+      if (week.number >= 7) await api.setJudgeCried(week.id, cried === '' ? null : cried === 'yes')
+      if (week.number === 6) await api.setBottomThree(week.id, bottom3.length ? bottom3 : null, bottomPts === '' ? null : Number(bottomPts))
       showToast(`${week.title} saved. ${elim.length ? elim.length + ' sent home.' : 'Nobody went home.'}`); reload()
     } catch (e) { showToast(e.message, true) } finally { setBusy(false) }
   }
@@ -100,7 +102,18 @@ export default function Commish() {
             </FragmentRow>
           ))}
         </div>
-        {week.number >= 6 && (
+        {week.number >= 7 && (
+          <div style={{ marginTop: 14 }}>
+            <div className="eyebrow">Did a judge cry? · for Last Rites</div>
+            <div className="row" style={{ marginTop: 6, gap: 8 }}>
+              <button type="button" disabled={!canScore} className={`btn small${cried === 'yes' ? '' : ' ghost'}`} onClick={() => setCried('yes')}>😭 Yes</button>
+              <button type="button" disabled={!canScore} className={`btn small blue${cried === 'no' ? '' : ' ghost'}`} onClick={() => setCried('no')}>🧊 No</button>
+              <button type="button" disabled={!canScore} className={`btn small${cried === '' ? '' : ' ghost'}`} onClick={() => setCried('')}>Not ruled</button>
+            </div>
+            <p className="small muted">Your call. Nobody gets the tears points until you rule.</p>
+          </div>
+        )}
+        {week.number === 6 && (
           <div style={{ marginTop: 14 }}>
             <div className="eyebrow">Bottom three (as announced on the show) · for the Gauntlet</div>
             <div className="row" style={{ marginTop: 6, gap: 6 }}>
