@@ -100,7 +100,8 @@ language sql stable set search_path = public as $$
     select r.team_id, r.week_id, coalesce((lg.settings->>'last_rites_points')::numeric, 4) * (
         (case when (select n from night where week_id = r.week_id and couple_id = r.high_id) = (select max(n) from night where week_id = r.week_id) then 1 else 0 end)
       + (case when (select n from night where week_id = r.week_id and couple_id = r.low_id)  = (select min(n) from night where week_id = r.week_id) then 1 else 0 end)
-      + (case when exists (select 1 from night where week_id = r.week_id and couple_id = r.out_id and eliminated) then 1 else 0 end)
+      + (case when exists (select 1 from night where week_id = r.week_id and couple_id = r.out_id and eliminated)
+                 or not exists (select 1 from night where week_id = r.week_id and eliminated) then 1 else 0 end)  -- nobody went home: everyone was right
       + (case when w.judge_cried is not null and w.judge_cried = r.judge_cries then 1 else 0 end)
     ) as pts
     from last_rites r join teams t on t.id = r.team_id and t.league_id = p_league

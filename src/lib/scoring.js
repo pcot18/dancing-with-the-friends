@@ -107,7 +107,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     const q = {
       high: { pick: coupleById[r.high_id], hit: n(r.high_id) === hi },
       low: { pick: coupleById[r.low_id], hit: n(r.low_id) === lo },
-      out: { pick: coupleById[r.out_id], hit: !!night.find(x => x.id === r.out_id)?.out },
+      out: { pick: coupleById[r.out_id], hit: !!night.find(x => x.id === r.out_id)?.out || !night.some(x => x.out), nobodyOut: !night.some(x => x.out) },
       cry: { pick: r.judge_cries, hit: week.judge_cried != null && week.judge_cried === r.judge_cries, ruled: week.judge_cried != null },
     }
     const hits = Object.values(q).filter(x => x.hit).length
