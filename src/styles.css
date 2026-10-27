@@ -271,3 +271,19 @@ tr.leader td:first-child { border-left: 4px solid var(--gold); }
 @keyframes zh-wave { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 @keyframes zh-dirt { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 6px), -22px); } }
 @media (prefers-reduced-motion: reduce) { .zh-arm, .zh-dirt, .zh-emoji, .gy-fog { animation: none; } .zh-dirt { display: none; } .zh-emoji { opacity: 1; } }
+
+/* ---------- Horror Movie Night ---------- */
+.danceoff.horror { background-color: #241C2E; color: #F3ECF7; animation: hr-lights 7s steps(1) infinite; }
+.danceoff.horror .eyebrow, .danceoff.horror .muted { color: #C9BBD6; }
+.danceoff.horror h1.shimmer { background: linear-gradient(90deg, #FF4D6D, #FFC2D1, #FF4D6D); -webkit-background-clip: text; background-clip: text; }
+.danceoff.horror .danceoff-row { background: rgba(20, 14, 28, .78); border-color: #4A3550; color: #F3ECF7; position: relative; overflow: hidden; }
+.danceoff.horror .danceoff-row.revealed { border-color: #FF4D6D; }
+.danceoff.horror .danceoff-slot { color: #FF4D6D; }
+.danceoff.horror .danceoff-name .muted { color: #B9A9C7; }
+.hr-flicker { position: absolute; inset: 0; pointer-events: none; z-index: 0 !important; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.06), transparent 40%); }
+.hr-eyes { position: absolute; width: 22px; height: 8px; background: radial-gradient(circle at 25% 50%, #FFD60A 0 3px, transparent 4px), radial-gradient(circle at 75% 50%, #FFD60A 0 3px, transparent 4px); opacity: 0; animation: hr-blink 4.5s ease-in-out infinite; filter: drop-shadow(0 0 4px #FFD60A); }
+@keyframes hr-blink { 0%, 55% { opacity: 0; } 60%, 80% { opacity: 1; } 83% { opacity: 0; } 86%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hr-lights { 0%, 100% { filter: brightness(1); } 31% { filter: brightness(1); } 32% { filter: brightness(.55); } 33% { filter: brightness(1.05); } 34% { filter: brightness(.7); } 35% { filter: brightness(1); } 72% { filter: brightness(1); } 73% { filter: brightness(.5); } 74% { filter: brightness(1); } }
+.hr-slash { position: absolute; inset: -40% -10%; pointer-events: none; background: linear-gradient(115deg, transparent 47%, rgba(255,77,109,.0) 48%, #FF4D6D 49.5%, #B3122F 50.5%, rgba(255,77,109,.0) 52%, transparent 53%); transform: translateX(-120%); animation: hr-swipe .55s .1s cubic-bezier(.6,0,.3,1) forwards; }
+@keyframes hr-swipe { to { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) { .danceoff.horror, .hr-eyes, .hr-slash { animation: none; } .hr-slash { display: none; } }

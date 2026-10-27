@@ -10,6 +10,8 @@ export const DEFAULT_SETTINGS = {
   gauntlet_stake: 10,
   gauntlet_target_couple: 11,
   last_rites_points: 4,
+  double_feature_points: 8,
+  double_feature_one: 2,
 }
 
 export function normalizeScore(score, week) {
@@ -22,7 +24,7 @@ export function normalizeScore(score, week) {
  * TeamLine = { team, total, weeklyWins, weeks: { [weekId]: WeekLine } }
  * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], won }
  */
-export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [], lastRites = [] }) {
+export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [], lastRites = [], doubleFeature = [] }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
@@ -114,6 +116,17 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     const bonus = hits * settings.last_rites_points
     line.weeks[r.week_id].rites = { ...q, hits, bonus, each: settings.last_rites_points }
     line.weeks[r.week_id].points += bonus
+  }
+
+  // Double Feature (Horror Movie Night on): name both couples going home. Both = 8, one = 2.
+  for (const d of doubleFeature) {
+    const line = lines[d.team_id]
+    if (!line || !weeksScored.includes(d.week_id)) continue
+    const picks = d.out_ids.map(id => ({ couple: coupleById[id], hit: !!scoreMap[scoreKey(d.week_id, id)]?.eliminated }))
+    const hits = picks.filter(p => p.hit).length
+    const bonus = hits >= 2 ? settings.double_feature_points : hits === 1 ? settings.double_feature_one : 0
+    line.weeks[d.week_id].double = { picks, hits, bonus }
+    line.weeks[d.week_id].points += bonus
   }
 
   for (const t of teams) {

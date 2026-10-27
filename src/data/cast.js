@@ -13,7 +13,7 @@ export const WEEKS = [
   { number: 5,  title: 'Mariah Carey Night', tuesday: '2026-10-06' },
   { number: 6,  title: 'Super Bowl Night',  tuesday: '2026-10-13' },
   { number: 7,  title: 'Dedication Night',  tuesday: '2026-10-20' },
-  { number: 8,  title: 'Week 8',            tuesday: '2026-10-27' },
+  { number: 8,  title: 'Horror Movie Night', tuesday: '2026-10-27' },
   { number: 9,  title: 'Week 9',            tuesday: '2026-11-03' },
   { number: 10, title: 'Week 10',           tuesday: '2026-11-10' },
   { number: 11, title: 'Semifinal',         tuesday: '2026-11-17' },
@@ -41,6 +41,7 @@ export const SCORES = [
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
   { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
   { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
+  { week: 7, couple: 12, total: 35, max: 40 }, { week: 7, couple: 7, total: 32, max: 40 }, { week: 7, couple: 3, total: 38, max: 40 }, { week: 7, couple: 9, total: 32, max: 40 }, { week: 7, couple: 13, total: 32, max: 40 }, { week: 7, couple: 5, total: 36, max: 40 }, { week: 7, couple: 4, total: 32, max: 40 }, { week: 7, couple: 1, total: 37, max: 40 }, { week: 7, couple: 2, total: 36, max: 40 }, { week: 7, couple: 6, total: 37, max: 40 },
   { week: 6, couple: 12, total: 33, max: 40 }, { week: 6, couple: 7, total: 31, max: 40 }, { week: 6, couple: 3, total: 34, max: 40 }, { week: 6, couple: 9, total: 30, max: 40 }, { week: 6, couple: 13, total: 25, max: 40 }, { week: 6, couple: 5, total: 33, max: 40 }, { week: 6, couple: 4, total: 29, max: 40 }, { week: 6, couple: 11, total: 22, max: 40, eliminated: true }, { week: 6, couple: 1, total: 36, max: 40 }, { week: 6, couple: 2, total: 33, max: 40 }, { week: 6, couple: 6, total: 36, max: 40 },
   { week: 5, couple: 1, total: 24 }, { week: 5, couple: 2, total: 24 }, { week: 5, couple: 3, total: 23 }, { week: 5, couple: 4, total: 20 }, { week: 5, couple: 5, total: 21 }, { week: 5, couple: 6, total: 24 }, { week: 5, couple: 7, total: 21 }, { week: 5, couple: 9, total: 21 }, { week: 5, couple: 11, total: 13 }, { week: 5, couple: 12, total: 25 }, { week: 5, couple: 13, total: 19 }, { week: 5, couple: 14, total: 21, eliminated: true },
 ]
@@ -165,5 +166,14 @@ export const THEMES = {
     calls: ['This one\'s for Grandma…', 'The fog machine has a dedication too.', 'Carrie Ann is already crying.', 'Somebody\'s dancing for their dog.', 'The ground is moving. That\'s normal.', 'Bruno has risen. Bruno never left.', 'A single tear. Then a 9.', 'Shhh. Dearly beloved, we are gathered…'],
     done: 'The dead have spoken. Rest in picks.',
     tint: 'linear-gradient(120deg, #E6E3F0, #DCE4DD, #EFE4F3)',
+  },
+  8: {
+    name: 'Horror Movie Night',
+    scene: 'horror',
+    headline: 'The draft order is coming from inside the ballroom',
+    moves: ['🔪', '🎃', '👻', '🧛', '🕷️', '🪓', '🩸', '📞'],
+    calls: ['Don\'t go in the basement. The judges are in the basement.', 'It\'s just the fog machine. It\'s always just the fog machine.', 'Bruno has been behind you this whole time.', 'The lights flicker. Carrie Ann flickers with them.', 'Two go home tonight. Nobody is safe. Not even Jenna.', 'Final-girl energy from the back of the ballroom…', 'Do you like scary movies? Do you like a 7?', 'Something is scratching at the draft board…'],
+    done: 'Nobody survives the group dance.',
+    tint: 'linear-gradient(120deg, #2A2233, #3A1E2B, #1F1A2E)',
   },
 }

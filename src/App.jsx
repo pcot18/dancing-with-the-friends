@@ -59,7 +59,7 @@ export default function App() {
     })
   }, [user, leagueId])
 
-  const standings = useMemo(() => season && leagueData ? computeStandings({ season: season.season, league: leagueData.league, teams: leagueData.teams, weeks: season.weeks, scores: season.scores, picks: leagueData.picks, powerPlays: leagueData.powerPlays, couples: season.couples, predictions: leagueData.predictions, gauntlet: leagueData.gauntlet, lastRites: leagueData.lastRites }) : null, [season, leagueData])
+  const standings = useMemo(() => season && leagueData ? computeStandings({ season: season.season, league: leagueData.league, teams: leagueData.teams, weeks: season.weeks, scores: season.scores, picks: leagueData.picks, powerPlays: leagueData.powerPlays, couples: season.couples, predictions: leagueData.predictions, gauntlet: leagueData.gauntlet, lastRites: leagueData.lastRites, doubleFeature: leagueData.doubleFeature }) : null, [season, leagueData])
   const weekInfo = useMemo(() => season ? currentWeekInfo(season.weeks, season.scores, leagueData?.drafts, now) : null, [season, leagueData, now])
 
   if (user === undefined) return <div className="login"><div className="display" style={{ fontSize: '2rem' }}>Warming up… 🪩</div></div>

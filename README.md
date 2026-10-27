@@ -19,7 +19,8 @@ Static React app on GitHub Pages, Supabase for login and data. Costs nothing to 
 - **The Elimination Call** (weeks 1–5 only, retired from week 6; the UI hides it, old calls still count): each team guesses who goes home and that couple's judges' score. Both right = +10 that week (`elim_call_points`; set `elim_call_requires_score` false to award it for the couple alone). Calls are hidden until scores go in.
 - **The Guillermo Gauntlet** (week 6 on, after the draft): each team names the three couples that will land in the bottom three (+10 when every couple the show spotlights is among your three — the show sometimes spotlights only two; the commissioner enters the announced couples on the Commish tab and can set a different payout for that week) and votes whether Guillermo goes home, staking 10 points. The correct side splits the losers' stakes; a unanimous vote exchanges nothing. (`gauntlet_bottom_points`, `gauntlet_stake`, `gauntlet_target_couple`.)
 - **Last Rites** (week 7 on, after the draft; replaces the Gauntlet): four questions at `last_rites_points` (4) each: highest scorer, lowest scorer, who goes home, and whether a judge cries. The first three settle from the scores (ties count; a night with no elimination counts as right for everyone); the commissioner rules on tears on the Commish tab.
-- **Draft-night themes.** `THEMES` in `src/data/cast.js` restyles the dance-off per week (image in `/public`, commentary lines, headline). Week 5 is Mariah Carey Night; week 6 is Super Bowl Night (`src/screens/FootballShow.jsx`, 22-second reveal via `reveal_seconds`); week 7 is Dedication Night (`src/screens/Graveyard.jsx`: tombstones for the eliminated, zombie hands on the reveal).
+- **Double Feature** (week 8 on, after the draft; replaces Last Rites): two couples go home; name both for `double_feature_points` (8), one of them for `double_feature_one` (2).
+- **Draft-night themes.** `THEMES` in `src/data/cast.js` restyles the dance-off per week (image in `/public`, commentary lines, headline). Week 5 is Mariah Carey Night; week 6 is Super Bowl Night (`src/screens/FootballShow.jsx`, 22-second reveal via `reveal_seconds`); week 7 is Dedication Night (`src/screens/Graveyard.jsx`: tombstones for the eliminated, zombie hands on the reveal); week 8 is Horror Movie Night (flickering lights, knife slash on each reveal).
 - **Standings.** Season points, then weekly wins.
 
 All the numbers live in `leagues.settings` (JSON) so a league can change them.
@@ -72,7 +73,7 @@ src/
   lib/wikipedia.js      score auto-fill
   data/cast.js          Season 35 cast + scouting copy
 supabase/
-  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired · 0004 dance-off + random order · 0005 commissioner clock · 0006 elimination call · 0007 gauntlet · 0008 bottom-subset · 0009 last rites
+  migrations/               0001 schema · 0002 first-user-is-admin · 0003 ride-or-die retired · 0004 dance-off + random order · 0005 commissioner clock · 0006 elimination call · 0007 gauntlet · 0008 bottom-subset · 0009 last rites · 0010 double feature
   seed.sql                     generated from src/data/cast.js
 ```
 

@@ -64,7 +64,7 @@ export default function DraftRoom() {
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'graveyard' ? '🪦 Wake the dead' : theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'horror' ? '🔪 Roll the credits' : theme?.scene === 'graveyard' ? '🪦 Wake the dead' : theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
             <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
@@ -150,7 +150,8 @@ export default function DraftRoom() {
       {/* ---------- ELIMINATION CALL ---------- */}
       {phase === 'window' && myTeam && week.number < 6 && <EliminationCall />}{/* retired from week 6; week-5 calls still count */}
       {phase === 'window' && myTeam && week.number === 6 && <Gauntlet />}
-      {phase === 'window' && myTeam && week.number >= 7 && <LastRites />}
+      {phase === 'window' && myTeam && week.number === 7 && <LastRites />}
+      {phase === 'window' && myTeam && week.number >= 8 && <DoubleFeature />}
 
       {/* rosters (any phase once picks exist) */}
       {weekPicks.length > 0 && (
@@ -324,6 +325,47 @@ function LastRites() {
         </div>
       </div>
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your rites: high <b>{name(mine.high_id)}</b>, low <b>{name(mine.low_id)}</b>, going home <b>{name(mine.out_id)}</b>, judge cries <b>{mine.judge_cries ? 'yes' : 'no'}</b>. Changeable until the scores are in.</p>}
+    </section>
+  )
+}
+
+// Horror Movie Night on: two couples go home. Name both for double_feature_points, one for double_feature_one.
+function DoubleFeature() {
+  const { api, league, couples, teams, doubleFeature = [], myTeam, weekInfo, reload, showToast } = useData()
+  const { week } = weekInfo
+  const both = league.settings?.double_feature_points ?? 8, one = league.settings?.double_feature_one ?? 2
+  const mine = doubleFeature.find(r => r.team_id === myTeam.id && r.week_id === week.id)
+  const [ids, setIds] = useState(mine?.out_ids || [])
+  const [busy, setBusy] = useState(false)
+  const alive = couples.filter(c => !c.eliminated_week)
+  const made = doubleFeature.filter(r => r.week_id === week.id).length
+  const toggle = (id) => setIds(b => b.includes(id) ? b.filter(x => x !== id) : b.length < 2 ? [...b, id] : b)
+  async function save() {
+    setBusy(true)
+    try { await api.makeDoubleFeature(league.id, week.id, ids); showToast('Double Feature locked. Hidden until the scores go in.'); reload() }
+    catch (e) { showToast(e.message, true) } finally { setBusy(false) }
+  }
+  const name = (id) => couples.find(c => c.id === id)?.celeb.split(' ')[0]
+  return (
+    <section className="card" style={{ borderColor: '#8B1E3F' }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>🔪 Double Feature</h2>
+        <span className="pill" style={{ background: '#8B1E3F', color: '#fff', borderColor: 'transparent' }}>{both} pts · {one} for one</span>
+      </div>
+      <p className="small muted">Two couples go home tonight. Name both and it's +{both}. Get one of them and it's +{one}. Get neither and the call is coming from inside your own house. {made} of {teams.length} teams have picked their victims.</p>
+      <div className="row" style={{ marginTop: 8, gap: 6 }}>
+        {alive.map(c => (
+          <button key={c.id} type="button" onClick={() => toggle(c.id)} className="couple-chip"
+            style={{ cursor: 'pointer', borderColor: ids.includes(c.id) ? '#8B1E3F' : undefined, background: ids.includes(c.id) ? '#F6DCE3' : undefined }}>
+            <span className="av" style={ids.includes(c.id) ? { background: '#8B1E3F' } : undefined}>{initials(c)}</span>{c.celeb}
+          </button>
+        ))}
+      </div>
+      <div className="row" style={{ marginTop: 12, gap: 8 }}>
+        <span className="small muted">{ids.length}/2 marked for death</span>
+        <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || ids.length !== 2} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
+      </div>
+      {mine && <p className="small muted" style={{ marginTop: 8 }}>Your Double Feature: <b>{mine.out_ids.map(name).join(' & ')}</b>. Changeable until the scores are in.</p>}
     </section>
   )
 }

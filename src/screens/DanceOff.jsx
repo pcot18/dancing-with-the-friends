@@ -19,6 +19,7 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
   const scrambleMs = Math.max(2500, total - revealMs * n - 600)
   const showing = theme.scene === 'superbowl' && elapsed < scrambleMs
   const graveyard = theme.scene === 'graveyard'
+  const horror = theme.scene === 'horror'
   // how many slots (from the bottom) are locked in
   const locked = elapsed < scrambleMs ? 0 : Math.min(n, Math.floor((elapsed - scrambleMs) / revealMs) + 1)
   const lockedIds = new Set(order.slice(n - locked))
@@ -43,8 +44,9 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
   const done = locked >= n
 
   return (
-    <section className={`hero danceoff${graveyard ? ' graveyard' : ''}`} style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
+    <section className={`hero danceoff${graveyard ? ' graveyard' : ''}${horror ? ' horror' : ''}`} style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
       {graveyard && <Tombstones couples={couples} count={9} />}
+      {horror && <div className="hr-flicker" aria-hidden="true"><span className="hr-eyes" style={{ left: '8%', top: '14%' }} /><span className="hr-eyes" style={{ left: '86%', top: '58%', animationDelay: '1.3s' }} /><span className="hr-eyes" style={{ left: '62%', top: '9%', animationDelay: '2.1s' }} /></div>}
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div className="eyebrow">Draft order · {theme.name || 'dance-off'}</div>
         <span className="pill live">Live</span>
@@ -68,6 +70,7 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
               {r.revealed ? <>{r.team.name} <span className="small muted" style={{ fontWeight: 400 }}>{members.filter(m => m.team_id === r.team.id).map(m => m.display_name).join(' & ')}</span></> : r.team?.name}
             </span>
             {r.revealed && r.slot === 1 && <span className="pill gold">First pick</span>}
+            {horror && r.revealed && <i className="hr-slash" aria-hidden="true" />}
           </li>
         ))}
       </ol>
