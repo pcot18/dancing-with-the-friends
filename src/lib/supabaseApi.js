@@ -6,7 +6,10 @@ const url = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
 export const supabase = url && key ? createClient(url, key) : null
 
+import { WEEKS } from '../data/cast.js'
 const ok = ({ data, error }) => { if (error) throw new Error(error.message); return data }
+const DOUBLE_FEATURE_FROM = 8   // week number the Double Feature starts (Last Rites was week 7 only)
+let weeksCache = []
 
 export const supabaseApi = {
   isDemo: false,
@@ -48,6 +51,9 @@ export const supabaseApi = {
       ok(await supabase.from('weeks').select('*').eq('season_id', season.id).order('number')),
       ok(await supabase.from('scores').select('*')),
     ])
+    // a week still titled 'Week N' in the DB takes its name from src/data/cast.js (themes land in code first)
+    for (const w of weeks) { const local = WEEKS.find(x => x.number === w.number); if (local && /^Week \d+$/.test(w.title || '')) w.title = local.title }
+    weeksCache = weeks
     return { season, couples, weeks, scores }
   },
 
@@ -58,7 +64,7 @@ export const supabaseApi = {
     const league = ok(await supabase.from('leagues').select('*').eq('id', leagueId).single())
     const teams = ok(await supabase.from('teams').select('*').eq('league_id', leagueId).order('created_at'))
     const teamIds = teams.map(t => t.id)
-    const [members, profiles, picks, powerPlays, drafts, predictions, gauntlet, lastRites, doubleFeature] = await Promise.all([
+    const [members, profiles, picks, powerPlays, drafts, predictions, gauntlet, ritesRows, dfRows] = await Promise.all([
       ok(await supabase.from('team_members').select('*').in('team_id', teamIds)),
       ok(await supabase.from('profiles').select('*')),
       ok(await supabase.from('picks').select('*').in('team_id', teamIds)),
@@ -67,8 +73,14 @@ export const supabaseApi = {
       ok(await supabase.from('predictions').select('*').in('team_id', teamIds)),
       ok(await supabase.from('gauntlet').select('*').in('team_id', teamIds)),
       ok(await supabase.from('last_rites').select('*').in('team_id', teamIds)),
-      ok(await supabase.from('double_feature').select('*').in('team_id', teamIds)),
+      supabase.from('double_feature').select('*').in('team_id', teamIds).then(r => r.error ? null : r.data),   // null until migration 0010 is applied
     ])
+    // Double Feature fallback (migration 0010 not applied yet): week-8+ picks are parked in last_rites as
+    // {high_id: victim 1, low_id: victim 2}. Pull them out so they're never scored as Last Rites.
+    const weekNums = Object.fromEntries(weeksCache.map(w => [w.id, w.number]))
+    const parked = ritesRows.filter(r => (weekNums[r.week_id] ?? r.week_id) >= DOUBLE_FEATURE_FROM)   // week ids equal week numbers in this seed
+    const lastRites = ritesRows.filter(r => !parked.includes(r))
+    const doubleFeature = dfRows ?? parked.map(r => ({ team_id: r.team_id, week_id: r.week_id, out_ids: [r.high_id, r.low_id], updated_at: r.updated_at }))
     const nameOf = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]))
     const membersNamed = members.map(m => ({ ...m, display_name: nameOf[m.user_id] || 'friend' }))
     const myTeam = teams.find(t => members.some(m => m.team_id === t.id && m.user_id === user.id)) || null
@@ -80,7 +92,13 @@ export const supabaseApi = {
   async makePick(league_id, week_id, couple_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: couple_id })) },
   async autoPick(league_id, week_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: null })) },
   async makeCall(league_id, week_id, couple_id, score) { return ok(await supabase.rpc('make_call', { p_league: league_id, p_week: week_id, p_couple: couple_id, p_score: score })) },
-  async makeDoubleFeature(league_id, week_id, ids) { return ok(await supabase.rpc('make_double_feature', { p_league: league_id, p_week: week_id, p_out: ids })) },
+  async makeDoubleFeature(league_id, week_id, ids) {
+    const r = await supabase.rpc('make_double_feature', { p_league: league_id, p_week: week_id, p_out: ids })
+    if (r.error && /make_double_feature/.test(r.error.message)) {   // 0010 not applied: park it in last_rites (see loadLeague)
+      return ok(await supabase.rpc('make_last_rites', { p_league: league_id, p_week: week_id, p_high: ids[0], p_low: ids[1], p_out: ids[0], p_cries: false }))
+    }
+    return ok(r)
+  },
   async makeLastRites(league_id, week_id, a) { return ok(await supabase.rpc('make_last_rites', { p_league: league_id, p_week: week_id, p_high: a.high, p_low: a.low, p_out: a.out, p_cries: a.cry })) },
   async setJudgeCried(week_id, v) { return ok(await supabase.from('weeks').update({ judge_cried: v }).eq('id', week_id)) },
   async makeGauntlet(league_id, week_id, bottom, out) { return ok(await supabase.rpc('make_gauntlet', { p_league: league_id, p_week: week_id, p_bottom: bottom, p_out: out })) },
