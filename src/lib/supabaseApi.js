@@ -64,7 +64,7 @@ export const supabaseApi = {
     const league = ok(await supabase.from('leagues').select('*').eq('id', leagueId).single())
     const teams = ok(await supabase.from('teams').select('*').eq('league_id', leagueId).order('created_at'))
     const teamIds = teams.map(t => t.id)
-    const [members, profiles, picks, powerPlays, drafts, predictions, gauntlet, ritesRows, dfRows] = await Promise.all([
+    const [members, profiles, picks, powerPlays, drafts, predictions, gauntlet, ritesRows, dfRows, props] = await Promise.all([
       ok(await supabase.from('team_members').select('*').in('team_id', teamIds)),
       ok(await supabase.from('profiles').select('*')),
       ok(await supabase.from('picks').select('*').in('team_id', teamIds)),
@@ -74,6 +74,7 @@ export const supabaseApi = {
       ok(await supabase.from('gauntlet').select('*').in('team_id', teamIds)),
       ok(await supabase.from('last_rites').select('*').in('team_id', teamIds)),
       supabase.from('double_feature').select('*').in('team_id', teamIds).then(r => r.error ? null : r.data),   // null until migration 0010 is applied
+      ok(await supabase.from('props').select('*').in('team_id', teamIds)),
     ])
     // Double Feature fallback (migration 0010 not applied yet): week-8+ picks are parked in last_rites as
     // {high_id: victim 1, low_id: victim 2}. Pull them out so they're never scored as Last Rites.
@@ -84,7 +85,7 @@ export const supabaseApi = {
     const nameOf = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]))
     const membersNamed = members.map(m => ({ ...m, display_name: nameOf[m.user_id] || 'friend' }))
     const myTeam = teams.find(t => members.some(m => m.team_id === t.id && m.user_id === user.id)) || null
-    return { league, teams, members: membersNamed, picks, powerPlays, drafts, predictions, gauntlet, lastRites, doubleFeature, myTeam, isCommissioner: league.commissioner === user.id }
+    return { league, teams, members: membersNamed, picks, powerPlays, drafts, predictions, gauntlet, lastRites, doubleFeature, props, myTeam, isCommissioner: league.commissioner === user.id }
   },
 
   // --- live draft ---
@@ -92,6 +93,8 @@ export const supabaseApi = {
   async makePick(league_id, week_id, couple_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: couple_id })) },
   async autoPick(league_id, week_id) { return ok(await supabase.rpc('make_pick', { p_league: league_id, p_week: week_id, p_couple: null })) },
   async makeCall(league_id, week_id, couple_id, score) { return ok(await supabase.rpc('make_call', { p_league: league_id, p_week: week_id, p_couple: couple_id, p_score: score })) },
+  async makeProps(league_id, week_id, answers) { return ok(await supabase.rpc('make_props', { p_league: league_id, p_week: week_id, p_answers: answers })) },
+  async setWeekExtra(week_id, extra) { return ok(await supabase.from('weeks').update({ extra }).eq('id', week_id)) },
   async makeDoubleFeature(league_id, week_id, ids) {
     const r = await supabase.rpc('make_double_feature', { p_league: league_id, p_week: week_id, p_out: ids })
     if (r.error && /make_double_feature/.test(r.error.message)) {   // 0010 not applied: park it in last_rites (see loadLeague)
@@ -114,6 +117,7 @@ export const supabaseApi = {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'gauntlet' }, cb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'last_rites' }, cb)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'double_feature' }, cb)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'props' }, cb)
       .subscribe()
     const poll = setInterval(cb, 2500)   // belt and braces: realtime can drop on phones (and on brand-new projects)
     return () => { clearInterval(poll); supabase.removeChannel(ch) }

@@ -3,7 +3,7 @@ import { useData, CoupleChip, TeamName, Sparkles, fmtCountdown, fmtET, initials 
 import { drafterAt, totalPicks, rosterSize, isCrunch } from '../lib/scoring.js'
 import DanceOff from './DanceOff.jsx'
 import { Tombstones } from './Graveyard.jsx'
-import { THEMES } from '../data/cast.js'
+import { THEMES, PROPS, DWTS_TEAMS } from '../data/cast.js'
 
 export default function DraftRoom() {
   const { api, league, teams, members, couples, scores, picks, predictions, gauntlet, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
@@ -64,7 +64,7 @@ export default function DraftRoom() {
             {' '}{crunch ? <>This week is <b>crunch time</b>: fewer couples than teams, so everyone picks one and duplicates are allowed (points split).</> : <>This week: <b>{roster} pick{roster === 1 ? '' : 's'}</b> each from {alive.length} couples.</>}
           </p>
           <div className="row" style={{ marginTop: 8 }}>
-            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'horror' ? '🔪 Roll the credits' : theme?.scene === 'graveyard' ? '🪦 Wake the dead' : theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
+            {canOpen ? <button className="btn" disabled={busy} onClick={start}>{theme?.scene === 'castle' ? '🪄 Make a wish' : theme?.scene === 'horror' ? '🔪 Roll the credits' : theme?.scene === 'graveyard' ? '🪦 Wake the dead' : theme?.scene === 'superbowl' ? '🏈 Kick it off' : theme?.name ? '🦋 Let Mariah decide' : '💃 Start the dance-off'}</button> : <span className="pill blue">Draft starts when the commissioner hits the button</span>}
             <span className="small muted">Usually around {new Date(week.draft_opens_at).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })} ET, before the show. {teams.length} team{teams.length === 1 ? '' : 's'} in.</span>
           </div>
         </section>
@@ -151,7 +151,8 @@ export default function DraftRoom() {
       {phase === 'window' && myTeam && week.number < 6 && <EliminationCall />}{/* retired from week 6; week-5 calls still count */}
       {phase === 'window' && myTeam && week.number === 6 && <Gauntlet />}
       {phase === 'window' && myTeam && week.number === 7 && <LastRites />}
-      {phase === 'window' && myTeam && week.number >= 8 && <DoubleFeature />}
+      {phase === 'window' && myTeam && week.number === 8 && <DoubleFeature />}
+      {phase === 'window' && myTeam && PROPS[week.number] && <Props />}
 
       {/* rosters (any phase once picks exist) */}
       {weekPicks.length > 0 && (
@@ -366,6 +367,77 @@ function DoubleFeature() {
         <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || ids.length !== 2} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
       </div>
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your Double Feature: <b>{mine.out_ids.map(name).join(' & ')}</b>. Changeable until the scores are in.</p>}
+    </section>
+  )
+}
+
+// Weekly props (week 9 on): questions from PROPS[week.number]; answers lock at week.picks_lock_at.
+function Props() {
+  const { api, league, couples, teams, props = [], myTeam, weekInfo, now, reload, showToast } = useData()
+  const { week } = weekInfo
+  const cfg = PROPS[week.number]
+  const dteams = DWTS_TEAMS[week.number] || {}
+  const mine = props.find(r => r.team_id === myTeam.id && r.week_id === week.id)
+  const [a, setA] = useState(mine?.answers || {})
+  const [busy, setBusy] = useState(false)
+  const alive = couples.filter(c => !c.eliminated_week)
+  const made = props.filter(r => r.week_id === week.id).length
+  const lockAt = week.picks_lock_at ? new Date(week.picks_lock_at) : null
+  const locked = lockAt && now.getTime() >= lockAt.getTime()
+  const cname = (id) => couples.find(c => c.id === id)?.celeb.split(' ')[0]
+  const complete = cfg.questions.every(q => q.type === 'side' ? a.side?.side && a.side?.margin !== '' && a.side?.margin != null : a[q.key] != null && a[q.key] !== '')
+  const max = cfg.questions.reduce((s, q) => s + q.points + (q.tiebreak || 0), 0)
+  async function save() {
+    setBusy(true)
+    try { await api.makeProps(league.id, week.id, a); showToast(`${cfg.title} locked. Hidden until the scores go in.`); reload() }
+    catch (e) { showToast(e.message, true) } finally { setBusy(false) }
+  }
+  const Opt = ({ on, onClick, children, color = 'var(--pink-deep)' }) => (
+    <button type="button" disabled={locked} onClick={onClick} className={`btn small${on ? '' : ' ghost'}`} style={on ? { background: color, borderColor: color } : undefined}>{children}</button>
+  )
+  return (
+    <section className="card" style={{ borderColor: '#3B2A6E' }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>{cfg.emoji} {cfg.title}</h2>
+        <span className="pill" style={{ background: '#3B2A6E', color: '#fff', borderColor: 'transparent' }}>{max} pts possible</span>
+      </div>
+      <p className="small muted">{cfg.blurb} {made} of {teams.length} teams are in.{lockAt && <> <b style={{ color: locked ? 'var(--bad)' : 'var(--ink)' }}>{locked ? 'Locked.' : `Locks at ${fmtET(lockAt)}.`}</b></>}</p>
+      {cfg.questions.map((q, i) => (
+        <div key={q.key} style={{ marginTop: 12 }}>
+          <div className="eyebrow">{i + 1}. {q.label} <span className="muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>· +{q.points}{q.tiebreak ? ` (+${q.tiebreak} closest margin)` : ''} · {q.hint}</span></div>
+          <div className="row" style={{ marginTop: 6, gap: 8, alignItems: 'center' }}>
+            {q.type === 'side' && <>
+              {Object.entries(dteams).map(([k, t]) => <Opt key={k} on={a.side?.side === k} color="#3B2A6E" onClick={() => setA(x => ({ ...x, side: { ...(x.side || {}), side: k } }))}>{t.emoji} {t.name}</Opt>)}
+              <label className="small muted" htmlFor="side-margin">by</label>
+              <input id="side-margin" type="number" min="0" max="40" step="1" disabled={locked} value={a.side?.margin ?? ''} onChange={e => setA(x => ({ ...x, side: { ...(x.side || {}), margin: e.target.value } }))} placeholder="pts" style={{ width: 70 }} />
+            </>}
+            {q.type === 'h2h' && <>
+              <Opt on={a[q.key] === 'a'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'a' }))}>{cname(q.a)}</Opt>
+              <span className="small muted">vs</span>
+              <Opt on={a[q.key] === 'b'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'b' }))}>{cname(q.b)}</Opt>
+            </>}
+            {q.type === 'yesno' && <>
+              <Opt on={a[q.key] === 'yes'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'yes' }))}>{q.yes || 'Yes'}</Opt>
+              <Opt on={a[q.key] === 'no'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'no' }))}>{q.no || 'No'}</Opt>
+            </>}
+            {q.type === 'out' && alive.map(c => (
+              <button key={c.id} type="button" disabled={locked} onClick={() => setA(x => ({ ...x, [q.key]: c.id }))} className="couple-chip"
+                style={{ cursor: 'pointer', borderColor: a[q.key] === c.id ? '#3B2A6E' : undefined, background: a[q.key] === c.id ? '#E7E1F5' : undefined }}>
+                <span className="av" style={a[q.key] === c.id ? { background: '#3B2A6E' } : undefined}>{initials(c)}</span>{c.celeb}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="row" style={{ marginTop: 14, gap: 8 }}>
+        <span className="small muted">{locked ? 'Answers are locked for the night.' : 'All six needed before you can lock.'}</span>
+        <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || locked || !complete} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
+      </div>
+      {mine && <p className="small muted" style={{ marginTop: 8 }}>Your answers: {cfg.questions.map(q => {
+        const v = mine.answers?.[q.key]
+        const txt = q.type === 'side' ? `${dteams[v?.side]?.name || '—'} by ${v?.margin ?? '?'}` : q.type === 'h2h' ? cname(v === 'a' ? q.a : q.b) : q.type === 'out' ? cname(Number(v)) : v
+        return <span key={q.key}><b>{txt || '—'}</b>{q.key === cfg.questions[cfg.questions.length - 1].key ? '' : ' · '}</span>
+      })}{locked ? '' : ' Changeable until the lock.'}</p>}
     </section>
   )
 }

@@ -4,7 +4,7 @@
 import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
 import { DEFAULT_SETTINGS, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const DEMO_BASE = new Date('2026-10-27T23:32:00Z').getTime()
+const DEMO_BASE = new Date('2026-11-02T23:32:00Z').getTime()
 const LOADED = Date.now()
 const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
 const NOW = new Date(DEMO_BASE)
@@ -15,7 +15,7 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 10139
 const state = {
   season: { ...SEASON, winner_couple_id: null, is_current: true },
   couples: COUPLES.map(c => ({ ...c, season_id: SEASON.id, eliminated_week: c.eliminated_week ?? null })),
-  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: w.number >= 6 ? 4 : 3, ...weekLocks(w) })),
+  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: w.number >= 6 ? 4 : 3, extra: {}, picks_lock_at: w.number === 9 ? '2026-11-03T01:05:00Z' : null, ...weekLocks(w) })),
   scores: SCORES.map(x => ({ week_id: x.week, couple_id: x.couple, raw_total: x.total, max_possible: x.max || 30, eliminated: !!x.eliminated })),
   league: { id: 'demo-league', season_id: SEASON.id, name: 'Tuesday Night Ballroom Crimes', invite_code: 'SEQUIN', commissioner: ME, settings: { ...DEFAULT_SETTINGS } },
   teams: [
@@ -35,6 +35,7 @@ const state = {
   gauntlet: [],
   lastRites: [],
   doubleFeature: [],
+  props: [],
   picks: [],
   powerPlays: [],
 }
@@ -75,7 +76,7 @@ function botChoice(d, seed) {
 
 // --- tonight: the room is open, you're on the clock ------------------------------
 const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
-const LIVE_WEEK = state.weeks.find(w => w.number === 8)
+const LIVE_WEEK = state.weeks.find(w => w.number === 9)
 openDraft(LIVE_WEEK)
 let botTimer = null
 function scheduleBots() {
@@ -111,7 +112,7 @@ export const demoApi = {
   async loadMyLeagues() { return clone([state.league]) },
   async loadLeague() {
     await wait()
-    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, predictions: state.predictions, gauntlet: state.gauntlet, lastRites: state.lastRites, doubleFeature: state.doubleFeature, myTeam: state.teams[0], isCommissioner: true })
+    return clone({ league: state.league, teams: state.teams, members: state.members, picks: state.picks, powerPlays: state.powerPlays, drafts: state.drafts, predictions: state.predictions, gauntlet: state.gauntlet, lastRites: state.lastRites, doubleFeature: state.doubleFeature, props: state.props, myTeam: state.teams[0], isCommissioner: true })
   },
   async startDraft(_l, week_id) { openDraft(state.weeks.find(w => w.id === week_id)); emit(); scheduleBots() },
   async makePick(_l, week_id, couple_id) {
@@ -128,6 +129,8 @@ export const demoApi = {
     applyPick(d, randomAvailable(d), true); emit(); scheduleBots()
   },
   async makeCall(_l, week_id, couple_id, score) { state.predictions = state.predictions.filter(p => !(p.team_id === 't1' && p.week_id === week_id)); state.predictions.push({ team_id: 't1', week_id, couple_id, predicted_score: score }); emit() },
+  async makeProps(_l, week_id, answers) { const w = state.weeks.find(x => x.id === week_id); if (w.picks_lock_at && nowMs() >= new Date(w.picks_lock_at).getTime()) throw new Error('Locked at 8:05 — no more changes'); state.props = state.props.filter(r => !(r.team_id === 't1' && r.week_id === week_id)); state.props.push({ team_id: 't1', week_id, answers }); emit() },
+  async setWeekExtra(week_id, extra) { state.weeks.find(w => w.id === week_id).extra = extra },
   async makeDoubleFeature(_l, week_id, ids) { state.doubleFeature = state.doubleFeature.filter(r => !(r.team_id === 't1' && r.week_id === week_id)); state.doubleFeature.push({ team_id: 't1', week_id, out_ids: ids }); emit() },
   async makeLastRites(_l, week_id, a) { state.lastRites = state.lastRites.filter(r => !(r.team_id === 't1' && r.week_id === week_id)); state.lastRites.push({ team_id: 't1', week_id, high_id: a.high, low_id: a.low, out_id: a.out, judge_cries: a.cry }); emit() },
   async setJudgeCried(week_id, v) { state.weeks.find(w => w.id === week_id).judge_cried = v },

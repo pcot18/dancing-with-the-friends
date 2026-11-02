@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useData, fmtET } from '../ui.jsx'
 import { fetchScoringChart, matchCouple, WIKI_PAGE } from '../lib/wikipedia.js'
+import { PROPS, DWTS_TEAMS } from '../data/cast.js'
 
 export default function Commish() {
   const { api, season, league, couples, weeks, scores, weekInfo, reload, showToast, profile, isCommissioner } = useData()
@@ -15,6 +16,10 @@ export default function Commish() {
   const [bottomPts, setBottomPts] = useState(week.bottom_points ?? '')
   const [cried, setCried] = useState(week.judge_cried == null ? '' : week.judge_cried ? 'yes' : 'no')
   const canScore = profile?.is_admin
+  const dteams = DWTS_TEAMS[week.number] || null          // team-dance week: grid holds individual scores, team score added per member
+  const propCfg = PROPS[week.number] || null
+  const [teamScores, setTeamScores] = useState({})
+  const [rulings, setRulings] = useState({})
 
   // couples eligible this week: alive before this week
   const eligible = couples.filter(c => !c.eliminated_week || c.eliminated_week >= week.number)
@@ -24,9 +29,11 @@ export default function Commish() {
     const r = {}
     for (const c of eligible) {
       const s = existing.find(x => x.couple_id === c.id)
-      r[c.id] = { total: s ? Number(s.raw_total) : '', eliminated: s ? !!s.eliminated : c.eliminated_week === week.number }
+      const indiv = week.extra?.indiv?.[c.id]
+      r[c.id] = { total: indiv != null ? Number(indiv) : s ? Number(s.raw_total) : '', eliminated: s ? !!s.eliminated : c.eliminated_week === week.number }
     }
     setRows(r); setJudges(week.judge_count || 3); setBottom3(week.bottom_three || [])
+    setTeamScores(week.extra?.team_scores || {}); setRulings(Object.fromEntries((PROPS[week.number]?.questions || []).filter(q => q.type === 'yesno').map(q => [q.key, week.extra?.[q.key] == null ? '' : week.extra[q.key] ? 'yes' : 'no'])))
     const first = existing[0]; if (first) setDances(Math.max(1, Math.round(Number(first.max_possible) / (10 * (week.judge_count || 3)))))
   }, [weekId])
 
@@ -36,11 +43,22 @@ export default function Commish() {
   async function save() {
     setBusy(true)
     try {
-      const out = Object.entries(rows).filter(([, v]) => v.total !== '' && v.total != null).map(([id, v]) => ({ couple_id: Number(id), raw_total: Number(v.total), max_possible: maxPossible, eliminated: !!v.eliminated }))
+      let out = Object.entries(rows).filter(([, v]) => v.total !== '' && v.total != null).map(([id, v]) => ({ couple_id: Number(id), raw_total: Number(v.total), max_possible: maxPossible, eliminated: !!v.eliminated }))
       if (!out.length) throw new Error('No scores entered')
+      if (dteams) {   // team-dance night: a couple's total = individual + their team's score, out of two dances
+        for (const k of Object.keys(dteams)) if (teamScores[k] === '' || teamScores[k] == null) throw new Error(`Enter the ${dteams[k].name} team-dance score`)
+        const teamOf = (id) => Object.keys(dteams).find(k => dteams[k].members.includes(id))
+        out = out.map(o => ({ ...o, raw_total: o.raw_total + Number(teamScores[teamOf(o.couple_id)] ?? 0), max_possible: maxPossible * 2 }))
+      }
       const elim = out.filter(o => o.eliminated).map(o => o.couple_id)
       await api.saveScores({ ...week, judge_count: judges }, out, elim)
-      if (week.number >= 7) await api.setJudgeCried(week.id, cried === '' ? null : cried === 'yes')
+      if (dteams || propCfg) {
+        const extra = { ...(week.extra || {}) }
+        if (dteams) { extra.indiv = Object.fromEntries(Object.entries(rows).filter(([, v]) => v.total !== '' && v.total != null).map(([id, v]) => [id, Number(v.total)])); extra.team_scores = Object.fromEntries(Object.keys(dteams).map(k => [k, Number(teamScores[k])])) }
+        for (const [k, v] of Object.entries(rulings)) extra[k] = v === '' ? null : v === 'yes'
+        await api.setWeekExtra(week.id, extra)
+      }
+      if (week.number === 7) await api.setJudgeCried(week.id, cried === '' ? null : cried === 'yes')
       if (week.number === 6) await api.setBottomThree(week.id, bottom3.length ? bottom3 : null, bottomPts === '' ? null : Number(bottomPts))
       showToast(`${week.title} saved. ${elim.length ? elim.length + ' sent home.' : 'Nobody went home.'}`); reload()
     } catch (e) { showToast(e.message, true) } finally { setBusy(false) }
@@ -93,7 +111,7 @@ export default function Commish() {
         </div>
         {wiki && wiki.unmatched.length > 0 && <p className="small" style={{ color: 'var(--bad)' }}>Couldn't match: {wiki.unmatched.join(', ')}</p>}
         <div className="score-grid">
-          <span className="head">Couple</span><span className="head" style={{ gridColumn: 'span 3' }}>Total / {maxPossible}</span><span className="head">Sent home</span>
+          <span className="head">Couple</span><span className="head" style={{ gridColumn: 'span 3' }}>{dteams ? `Individual dance / ${maxPossible}` : `Total / ${maxPossible}`}</span><span className="head">Sent home</span>
           {eligible.map(c => (
             <FragmentRow key={c.id}>
               <span><b>{c.celeb}</b> <span className="small muted">& {c.pro}</span></span>
@@ -102,7 +120,29 @@ export default function Commish() {
             </FragmentRow>
           ))}
         </div>
-        {week.number >= 7 && (
+        {dteams && (
+          <div style={{ marginTop: 14 }}>
+            <div className="eyebrow">Team-dance scores · added to every member's individual score</div>
+            <div className="row" style={{ marginTop: 6, gap: 12, alignItems: 'center' }}>
+              {Object.entries(dteams).map(([k, t]) => (
+                <label key={k} className="row" style={{ gap: 6 }}><span className="small"><b>{t.emoji} {t.name}</b></span>
+                  <input type="number" min="0" max={maxPossible} step="0.5" value={teamScores[k] ?? ''} disabled={!canScore} onChange={e => setTeamScores(s => ({ ...s, [k]: e.target.value }))} placeholder={`/ ${maxPossible}`} style={{ width: 90 }} /></label>
+              ))}
+            </div>
+            <p className="small muted">Members: {Object.values(dteams).map(t => `${t.name}: ${t.members.map(id => couples.find(c => c.id === id)?.celeb.split(' ')[0]).join(', ')}`).join(' · ')}</p>
+          </div>
+        )}
+        {propCfg && propCfg.questions.filter(q => q.type === 'yesno').map(q => (
+          <div key={q.key} style={{ marginTop: 14 }}>
+            <div className="eyebrow">{q.label} · for {propCfg.title}</div>
+            <div className="row" style={{ marginTop: 6, gap: 8 }}>
+              <button type="button" disabled={!canScore} className={`btn small${rulings[q.key] === 'yes' ? '' : ' ghost'}`} onClick={() => setRulings(r => ({ ...r, [q.key]: 'yes' }))}>Yes</button>
+              <button type="button" disabled={!canScore} className={`btn small blue${rulings[q.key] === 'no' ? '' : ' ghost'}`} onClick={() => setRulings(r => ({ ...r, [q.key]: 'no' }))}>No</button>
+              <button type="button" disabled={!canScore} className={`btn small${rulings[q.key] === '' ? '' : ' ghost'}`} onClick={() => setRulings(r => ({ ...r, [q.key]: '' }))}>Not ruled</button>
+            </div>
+          </div>
+        ))}
+        {week.number === 7 && (
           <div style={{ marginTop: 14 }}>
             <div className="eyebrow">Did a judge cry? · for Last Rites</div>
             <div className="row" style={{ marginTop: 6, gap: 8 }}>

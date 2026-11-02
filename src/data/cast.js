@@ -14,7 +14,7 @@ export const WEEKS = [
   { number: 6,  title: 'Super Bowl Night',  tuesday: '2026-10-13' },
   { number: 7,  title: 'Dedication Night',  tuesday: '2026-10-20' },
   { number: 8,  title: 'Horror Movie Night', tuesday: '2026-10-27' },
-  { number: 9,  title: 'Week 9',            tuesday: '2026-11-03' },
+  { number: 9,  title: 'Disney Night',      tuesday: '2026-11-02' },  // Monday: election coverage Tuesday,
   { number: 10, title: 'Week 10',           tuesday: '2026-11-10' },
   { number: 11, title: 'Semifinal',         tuesday: '2026-11-17' },
   { number: 12, title: 'Finale',            tuesday: '2026-11-24' },
@@ -41,6 +41,7 @@ export const SCORES = [
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
   { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
   { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
+  { week: 8, couple: 2, total: 40, max: 40 }, { week: 8, couple: 1, total: 37, max: 40 }, { week: 8, couple: 13, total: 37, max: 40 }, { week: 8, couple: 3, total: 36, max: 40 }, { week: 8, couple: 6, total: 35, max: 40 }, { week: 8, couple: 7, total: 35, max: 40, eliminated: true }, { week: 8, couple: 12, total: 32, max: 40 }, { week: 8, couple: 4, total: 28, max: 40 }, { week: 8, couple: 5, total: 26, max: 40 }, { week: 8, couple: 9, total: 26, max: 40, eliminated: true },
   { week: 7, couple: 12, total: 35, max: 40 }, { week: 7, couple: 7, total: 32, max: 40 }, { week: 7, couple: 3, total: 38, max: 40 }, { week: 7, couple: 9, total: 32, max: 40 }, { week: 7, couple: 13, total: 32, max: 40 }, { week: 7, couple: 5, total: 36, max: 40 }, { week: 7, couple: 4, total: 32, max: 40 }, { week: 7, couple: 1, total: 37, max: 40 }, { week: 7, couple: 2, total: 36, max: 40 }, { week: 7, couple: 6, total: 37, max: 40 },
   { week: 6, couple: 12, total: 33, max: 40 }, { week: 6, couple: 7, total: 31, max: 40 }, { week: 6, couple: 3, total: 34, max: 40 }, { week: 6, couple: 9, total: 30, max: 40 }, { week: 6, couple: 13, total: 25, max: 40 }, { week: 6, couple: 5, total: 33, max: 40 }, { week: 6, couple: 4, total: 29, max: 40 }, { week: 6, couple: 11, total: 22, max: 40, eliminated: true }, { week: 6, couple: 1, total: 36, max: 40 }, { week: 6, couple: 2, total: 33, max: 40 }, { week: 6, couple: 6, total: 36, max: 40 },
   { week: 5, couple: 1, total: 24 }, { week: 5, couple: 2, total: 24 }, { week: 5, couple: 3, total: 23 }, { week: 5, couple: 4, total: 20 }, { week: 5, couple: 5, total: 21 }, { week: 5, couple: 6, total: 24 }, { week: 5, couple: 7, total: 21 }, { week: 5, couple: 9, total: 21 }, { week: 5, couple: 11, total: 13 }, { week: 5, couple: 12, total: 25 }, { week: 5, couple: 13, total: 19 }, { week: 5, couple: 14, total: 21, eliminated: true },
@@ -77,7 +78,7 @@ export const COUPLES = [
     comp: 'Amy Purdy, S18 runner-up · Noah Galloway, S20 third', vote_engine: 'Paralympic gold, motivational-speaker charisma',
     bio: "Paralympic gold medalist, world-record holder, co-founder of Angel City Sports, and a professional speaker, which means he already knows how to hold a room for ninety seconds. Daniella Karagach won a Mirrorball with an NBA player and has a documented gift for turning athletes into dancers by week 4. A producer's dream, and the judges will be generous with the growth arc.",
     red_flag: 'None. If you draft against him at the watch party you are going to have to explain yourself.' },
-  { id: 7, celeb: 'Jackson Olson', pro: 'Emma Slater', known_for: 'Savannah Bananas', tier: 2,
+  { id: 7, eliminated_week: 8, celeb: 'Jackson Olson', pro: 'Emma Slater', known_for: 'Savannah Bananas', tier: 2,
     position: 'Athlete who dances for a living', grade: 'B+', floor: 17, ceiling: 28,
     comp: 'Ilona Maher, S33 runner-up', vote_engine: 'Savannah Bananas social media, which is enormous',
     bio: "Plays for the Savannah Bananas, a baseball team whose entire business model is choreographed dance breaks between innings. So: a professional athlete with hundreds of reps performing rehearsed routines in sold-out stadiums, plus a following that already knows how to vote on their phones. Emma Slater has a Mirrorball and a reputation for making big guys look light.",
@@ -87,7 +88,7 @@ export const COUPLES = [
     comp: 'His wife, one season ago', vote_engine: 'The entire Mormon Wives audience, redirected',
     bio: "Whitney Leavitt went deep in season 34; now the \"Instagram husband\" gets his turn. Except he isn't just a plus-one: he made his off-Broadway debut in May, so there's stage training. Partnered with Adele Zaikman, the rookie pro who won The Next Pro and will be dancing like her contract depends on it. He also has a live-in coach who knows what Carrie Ann is going to say before she says it.",
     red_flag: 'Rookie pros historically go home early. Also his household now contains two people who\'ve done this, which is either a superpower or a divorce.' },
-  { id: 9, celeb: 'Tyler Cameron', pro: 'Sharna Burgess', known_for: 'The Bachelorette', tier: 2,
+  { id: 9, eliminated_week: 8, celeb: 'Tyler Cameron', pro: 'Sharna Burgess', known_for: 'The Bachelorette', tier: 2,
     position: 'Athletic, coachable, tall', grade: 'B', floor: 17, ceiling: 27,
     comp: 'Hannah Brown, S28 champion (yes, that one)', vote_engine: 'Bachelor Nation, HGTV crossover',
     bio: "Former college football player, runner-up on Hannah Brown's Bachelorette, and the franchise's most famous case of losing the girl and winning the internet. Hannah then won this show, so there is a narrative. Sharna Burgess is back after five years away and won her Mirrorball with a radio host who could not dance, which tells you what she does with a man who takes direction.",
@@ -175,5 +176,41 @@ export const THEMES = {
     calls: ['Don\'t go in the basement. The judges are in the basement.', 'It\'s just the fog machine. It\'s always just the fog machine.', 'Bruno has been behind you this whole time.', 'The lights flicker. Carrie Ann flickers with them.', 'Two go home tonight. Nobody is safe. Not even Jenna.', 'Final-girl energy from the back of the ballroom…', 'Do you like scary movies? Do you like a 7?', 'Something is scratching at the draft board…'],
     done: 'Nobody survives the group dance.',
     tint: 'linear-gradient(120deg, #2A2233, #3A1E2B, #1F1A2E)',
+  },
+  9: {
+    name: 'Disney Night',
+    scene: 'castle',
+    headline: 'A wish is being made on the draft order',
+    moves: ['🏰', '✨', '🌟', '🎆', '🪄', '👑', '🫧', '🎇'],
+    calls: ['Fireworks over the castle…', 'Someone is wishing very, very hard.', 'The fairy godmother is running late.', 'Cynthia Erivo has entered the ballroom.', 'Team Slaytopia is stretching. Team Wildcats is yelling.', 'A pumpkin has been located. Stand by.', 'Alfonso is doing the dance. You know the one.', 'Happily ever after is a draft position.'],
+    done: 'The wish has been granted. Clocks start now.',
+    tint: 'linear-gradient(120deg, #1E2A5A, #3B2A6E, #16203F)',
+  },
+}
+
+// Disney Night team dances (every member gets the team score added to their individual score)
+export const DWTS_TEAMS = {
+  9: {
+    slaytopia: { name: 'Team Slaytopia', captain: 4, members: [4, 12, 3, 5], emoji: '🦊' },
+    wildcats: { name: 'Team Wildcats', captain: 13, members: [13, 6, 1, 2], emoji: '🐾' },
+  },
+}
+
+// Weekly prop questions (week 9 on). Answers are stored per team as JSON; rulings live in weeks.extra.
+// Types: side (team dance winner + margin tiebreak), h2h (higher individual score), yesno (commissioner
+// rules via extra[key]), out (eliminated couple; a no-elimination night counts for everyone).
+export const PROPS = {
+  9: {
+    title: 'Castle Call',
+    emoji: '🏰',
+    blurb: 'Six questions. Answers lock at 8:05pm ET sharp, so no "I meant to change it."',
+    questions: [
+      { key: 'side', type: 'side', label: 'Which team wins the team dance?', points: 5, tiebreak: 3, hint: 'the higher team-dance score; closest margin guess among the winners gets +3' },
+      { key: 'captains', type: 'h2h', label: "Captain's Call: Tatyana or Connor?", a: 4, b: 13, points: 3, hint: 'higher individual-dance score' },
+      { key: 'queens', type: 'h2h', label: 'Jenna or Amber?', a: 1, b: 3, points: 3, hint: 'higher individual-dance score' },
+      { key: 'kings', type: 'h2h', label: 'Harry or Ezra?', a: 2, b: 6, points: 3, hint: 'higher individual-dance score' },
+      { key: 'ten', type: 'yesno', label: 'Does Cynthia Erivo give anyone a 10?', points: 3, hint: 'commissioner rules', yes: '🔟 Yes, she\'s generous', no: '🙅 No tens' },
+      { key: 'out', type: 'out', label: 'Who goes home?', points: 4, hint: 'nobody goes home = everyone gets it' },
+    ],
   },
 }

@@ -20,6 +20,7 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
   const showing = theme.scene === 'superbowl' && elapsed < scrambleMs
   const graveyard = theme.scene === 'graveyard'
   const horror = theme.scene === 'horror'
+  const castle = theme.scene === 'castle'
   // how many slots (from the bottom) are locked in
   const locked = elapsed < scrambleMs ? 0 : Math.min(n, Math.floor((elapsed - scrambleMs) / revealMs) + 1)
   const lockedIds = new Set(order.slice(n - locked))
@@ -44,8 +45,13 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
   const done = locked >= n
 
   return (
-    <section className={`hero danceoff${graveyard ? ' graveyard' : ''}${horror ? ' horror' : ''}`} style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
+    <section className={`hero danceoff${graveyard ? ' graveyard' : ''}${horror ? ' horror' : ''}${castle ? ' castle' : ''}`} style={{ borderColor: 'var(--pink-deep)', ...(theme.tint ? { backgroundImage: theme.tint } : {}) }}>
       {graveyard && <Tombstones couples={couples} count={9} />}
+      {castle && <div className="cs-sky" aria-hidden="true">
+        {Array.from({ length: 6 }, (_, i) => <i key={i} className="cs-fw" style={{ left: `${10 + i * 15}%`, top: `${12 + (i % 3) * 14}%`, animationDelay: `${i * 0.9}s`, '--c': ['#FFD166', '#FF8FAB', '#8EE3EF', '#C3B1E1', '#FFF3B0', '#9BF6FF'][i] }} />)}
+        {Array.from({ length: 18 }, (_, i) => <b key={i} className="cs-star" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.4}s` }} />)}
+        <div className="cs-castle"><i /><i /><i /><i /><i /><i /><i /></div>
+      </div>}
       {horror && <div className="hr-flicker" aria-hidden="true"><span className="hr-eyes" style={{ left: '8%', top: '14%' }} /><span className="hr-eyes" style={{ left: '86%', top: '58%', animationDelay: '1.3s' }} /><span className="hr-eyes" style={{ left: '62%', top: '9%', animationDelay: '2.1s' }} /></div>}
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div className="eyebrow">Draft order · {theme.name || 'dance-off'}</div>
@@ -71,6 +77,7 @@ export default function DanceOff({ draft, teams, members, now, week, couples = [
             </span>
             {r.revealed && r.slot === 1 && <span className="pill gold">First pick</span>}
             {horror && r.revealed && <i className="hr-slash" aria-hidden="true" />}
+            {castle && r.revealed && <i className="cs-wish" aria-hidden="true" />}
           </li>
         ))}
       </ol>

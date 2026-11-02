@@ -1,4 +1,5 @@
-// Scoring engine. Mirrors league_pick_points / league_totals in the SQL schema.
+// Scoring engine. Mirrors league_pick_points / league_totals in the SQL schema (props, week 9 on, are app-only).
+import { PROPS } from '../data/cast.js'
 // Pure functions over plain data so demo mode and the live app share it.
 
 export const DEFAULT_SETTINGS = {
@@ -24,7 +25,7 @@ export function normalizeScore(score, week) {
  * TeamLine = { team, total, weeklyWins, weeks: { [weekId]: WeekLine } }
  * WeekLine = { points, picks: [{couple, raw, max, adj, shared, owners, eliminated, sniped}], won }
  */
-export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [], lastRites = [], doubleFeature = [] }) {
+export function computeStandings({ season, league, teams, weeks, scores, picks, powerPlays, couples, predictions = [], gauntlet = [], lastRites = [], doubleFeature = [], props = [] }) {
   const settings = { ...DEFAULT_SETTINGS, ...(league?.settings || {}) }
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
   const weekById = Object.fromEntries(weeks.map(w => [w.id, w]))
@@ -127,6 +128,64 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     const bonus = hits >= 2 ? settings.double_feature_points : hits === 1 ? settings.double_feature_one : 0
     line.weeks[d.week_id].double = { picks, hits, bonus }
     line.weeks[d.week_id].points += bonus
+  }
+
+  // Weekly props (week 9 on): questions in PROPS[week.number], rulings in week.extra
+  const propsByWeek = {}
+  for (const p of props) if (lines[p.team_id] && weeksScored.includes(p.week_id)) (propsByWeek[p.week_id] ||= []).push(p)
+  for (const [wid, rows] of Object.entries(propsByWeek)) {
+    const week = weekById[wid]; const cfg = PROPS[week.number]
+    if (!cfg) continue
+    const ex = week.extra || {}
+    const night = scores.filter(s => s.week_id === week.id)
+    const outs = night.filter(s => s.eliminated).map(s => s.couple_id)
+    const indiv = (id) => ex.indiv?.[id] != null ? Number(ex.indiv[id]) : null
+    const results = {}   // per team: { [key]: { answer, hit, pts, note } }
+    for (const q of cfg.questions) {
+      const grade = (r) => {
+        const a = r.answers?.[q.key]
+        if (a == null || a === '') return { answer: null, hit: false, pts: 0, ruled: true }
+        if (q.type === 'h2h') {
+          const sa = indiv(q.a), sb = indiv(q.b)
+          if (sa == null || sb == null) return { answer: a, hit: false, pts: 0, ruled: false }
+          const hit = sa === sb || (a === 'a' ? sa > sb : sb > sa)
+          return { answer: a, hit, pts: hit ? q.points : 0, ruled: true, tie: sa === sb }
+        }
+        if (q.type === 'yesno') {
+          if (ex[q.key] == null) return { answer: a, hit: false, pts: 0, ruled: false }
+          const hit = !!ex[q.key] === (a === 'yes')
+          return { answer: a, hit, pts: hit ? q.points : 0, ruled: true }
+        }
+        if (q.type === 'out') {
+          const hit = outs.length === 0 || outs.includes(Number(a))
+          return { answer: Number(a), hit, pts: hit ? q.points : 0, ruled: true, nobodyOut: outs.length === 0 }
+        }
+        if (q.type === 'side') {
+          const ts = ex.team_scores
+          if (!ts || ts[a.side] == null) return { answer: a, hit: false, pts: 0, ruled: false }
+          const keys = Object.keys(ts); const other = keys.find(k => k !== a.side)
+          const margin = Number(ts[a.side]) - Number(ts[other])
+          const hit = margin >= 0   // a tied team dance counts for everyone
+          return { answer: a, hit, pts: hit ? q.points : 0, ruled: true, margin: Math.abs(margin), guess: Number(a.margin) }
+        }
+        return { answer: a, hit: false, pts: 0, ruled: true }
+      }
+      const graded = rows.map(r => [r.team_id, grade(r)])
+      if (q.type === 'side' && q.tiebreak) {   // closest margin among the winners
+        const winners = graded.filter(([, g]) => g.hit && g.guess != null && !Number.isNaN(g.guess))
+        if (winners.length) {
+          const best = Math.min(...winners.map(([, g]) => Math.abs(g.guess - g.margin)))
+          for (const [, g] of winners) if (Math.abs(g.guess - g.margin) === best) { g.pts += q.tiebreak; g.closest = true }
+        }
+      }
+      for (const [tid, g] of graded) (results[tid] ||= {})[q.key] = g
+    }
+    for (const r of rows) {
+      const res = results[r.team_id] || {}
+      const bonus = Object.values(res).reduce((s, g) => s + g.pts, 0)
+      lines[r.team_id].weeks[wid].props = { cfg, results: res, bonus }
+      lines[r.team_id].weeks[wid].points += bonus
+    }
   }
 
   for (const t of teams) {
