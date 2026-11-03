@@ -316,3 +316,8 @@ tr.leader td:first-child { border-left: 4px solid var(--gold); }
 .cs-wish::after { content: ""; position: absolute; right: -6px; top: -5px; width: 13px; height: 13px; border-radius: 50%; background: #FFF9D6; box-shadow: 0 0 14px 4px #FFD166; }
 @keyframes cs-shoot { from { left: -12%; opacity: 1; } 80% { opacity: 1; } to { left: 108%; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cs-star, .cs-fw, .cs-wish { animation: none; } .cs-wish { display: none; } .cs-fw { opacity: .6; } }
+
+.order-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.order-list li { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; font-weight: 700; }
+.order-list li .btn { margin-left: auto; padding: 2px 8px; }
+.order-n { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; background: #3B2A6E; color: #fff; font-size: .75rem; font-family: "Lilita One", sans-serif; }

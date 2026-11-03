@@ -133,8 +133,15 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
   // Weekly props (week 9 on): questions in PROPS[week.number], rulings in week.extra
   const propsByWeek = {}
   for (const p of props) if (lines[p.team_id] && weeksScored.includes(p.week_id)) (propsByWeek[p.week_id] ||= []).push(p)
-  for (const [wid, rows] of Object.entries(propsByWeek)) {
+  for (const [wid, rows] of Object.entries(propsByWeek).sort((a, b) => weekById[a[0]].number - weekById[b[0]].number)) {
     const week = weekById[wid]; const cfg = PROPS[week.number]
+    // league leader going into this week (season points through the previous week); they can't chase
+    const before = teams.map(t => [t.id, weeks.filter(w => w.number < week.number).reduce((s, w) => s + (lines[t.id].weeks[w.id]?.points || 0), 0)])
+    const topPts = Math.max(...before.map(([, p]) => p))
+    const leaders = before.filter(([, p]) => p === topPts).map(([id]) => id)
+    // night ranking by total score (ties share a span of positions)
+    const ranked = scores.filter(s => s.week_id === week.id).map(s => ({ id: s.couple_id, n: Number(s.raw_total) })).sort((a, b) => b.n - a.n)
+    const span = {}; ranked.forEach((r, i) => { const same = ranked.filter(x => x.n === r.n); const first = ranked.findIndex(x => x.n === r.n); span[r.id] = [first, first + same.length - 1] })
     if (!cfg) continue
     const ex = week.extra || {}
     const night = scores.filter(s => s.week_id === week.id)
@@ -160,6 +167,12 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
           const hit = outs.length === 0 || outs.includes(Number(a))
           return { answer: Number(a), hit, pts: hit ? q.points : 0, ruled: true, nobodyOut: outs.length === 0 }
         }
+        if (q.type === 'order') {
+          if (leaders.includes(r.team_id)) return { answer: a, hit: false, pts: 0, ruled: true, leader: true }
+          const list = Array.isArray(a) ? a.map(Number) : []
+          const correct = list.filter((id, i) => span[id] && i >= span[id][0] && i <= span[id][1]).length
+          return { answer: list, hit: correct > 0, pts: correct * q.points, ruled: ranked.length > 0, correct, steal: correct * q.points }
+        }
         if (q.type === 'side') {
           const ts = ex.team_scores
           if (!ts || ts[a.side] == null) return { answer: a, hit: false, pts: 0, ruled: false }
@@ -183,8 +196,15 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     for (const r of rows) {
       const res = results[r.team_id] || {}
       const bonus = Object.values(res).reduce((s, g) => s + g.pts, 0)
-      lines[r.team_id].weeks[wid].props = { cfg, results: res, bonus }
+      lines[r.team_id].weeks[wid].props = { cfg, results: res, bonus, leader: leaders.includes(r.team_id) }
       lines[r.team_id].weeks[wid].points += bonus
+    }
+    // Chase the Leader: everything the chasers stole comes out of the leader(s), split if tied at the top
+    const stolen = rows.reduce((s, r) => s + (results[r.team_id]?.order?.steal || 0), 0)
+    if (stolen > 0) for (const id of leaders) {
+      const wl = lines[id].weeks[wid]
+      wl.chased = { lost: stolen / leaders.length, by: rows.filter(r => results[r.team_id]?.order?.steal > 0).map(r => ({ team: lines[r.team_id].team, pts: results[r.team_id].order.steal })) }
+      wl.points -= stolen / leaders.length
     }
   }
 

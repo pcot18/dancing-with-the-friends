@@ -373,9 +373,13 @@ function DoubleFeature() {
 
 // Weekly props (week 9 on): questions from PROPS[week.number]; answers lock at week.picks_lock_at.
 function Props() {
-  const { api, league, couples, teams, props = [], myTeam, weekInfo, now, reload, showToast } = useData()
+  const { api, league, couples, teams, props = [], myTeam, weekInfo, now, reload, showToast, standings } = useData()
   const { week } = weekInfo
   const cfg = PROPS[week.number]
+  const topTotal = standings?.ranked?.[0]?.total ?? 0
+  const leaders = (standings?.ranked || []).filter(l => l.total === topTotal).map(l => l.team.id)
+  const isLeader = leaders.includes(myTeam.id)
+  const leaderNames = leaders.map(id => teams.find(t => t.id === id)).filter(Boolean).map(t => `${t.emoji} ${t.name}`).join(' & ')
   const dteams = DWTS_TEAMS[week.number] || {}
   const mine = props.find(r => r.team_id === myTeam.id && r.week_id === week.id)
   const [a, setA] = useState(mine?.answers || {})
@@ -385,8 +389,10 @@ function Props() {
   const lockAt = week.picks_lock_at ? new Date(week.picks_lock_at) : null
   const locked = lockAt && now.getTime() >= lockAt.getTime()
   const cname = (id) => couples.find(c => c.id === id)?.celeb.split(' ')[0]
-  const complete = cfg.questions.every(q => q.type === 'side' ? a.side?.side && a.side?.margin !== '' && a.side?.margin != null : a[q.key] != null && a[q.key] !== '')
-  const max = cfg.questions.reduce((s, q) => s + q.points + (q.tiebreak || 0), 0)
+  const complete = cfg.questions.every(q => q.type === 'side' ? a.side?.side && a.side?.margin !== '' && a.side?.margin != null : q.type === 'order' ? (isLeader || (Array.isArray(a.order) && a.order.length === alive.length)) : a[q.key] != null && a[q.key] !== '')
+  const max = cfg.questions.reduce((s, q) => s + (q.type === 'order' ? (isLeader ? 0 : alive.length * q.points) : q.points + (q.tiebreak || 0)), 0)
+  const order = Array.isArray(a.order) ? a.order : []
+  const addToOrder = (id) => setA(x => ({ ...x, order: [...(Array.isArray(x.order) ? x.order : []).filter(y => y !== id), id] }))
   async function save() {
     setBusy(true)
     try { await api.makeProps(league.id, week.id, a); showToast(`${cfg.title} locked. Hidden until the scores go in.`); reload() }
@@ -402,7 +408,12 @@ function Props() {
         <span className="pill" style={{ background: '#3B2A6E', color: '#fff', borderColor: 'transparent' }}>{max} pts possible</span>
       </div>
       <p className="small muted">{cfg.blurb} {made} of {teams.length} teams are in.{lockAt && <> <b style={{ color: locked ? 'var(--bad)' : 'var(--ink)' }}>{locked ? 'Locked.' : `Locks at ${fmtET(lockAt)}.`}</b></>}</p>
-      {cfg.questions.map((q, i) => (
+      {cfg.questions.map((q, i) => q.type === 'order' && isLeader ? (
+        <div key={q.key} style={{ marginTop: 12 }}>
+          <div className="eyebrow">{i + 1}. Chase the Leader <span className="muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>· you ARE the leader</span></div>
+          <p className="small muted" style={{ marginTop: 6 }}>Every other team is ranking tonight's leaderboard. Each spot they get right takes 1 point off you. Enjoy the show.</p>
+        </div>
+      ) : (
         <div key={q.key} style={{ marginTop: 12 }}>
           <div className="eyebrow">{i + 1}. {q.label} <span className="muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>· +{q.points}{q.tiebreak ? ` (+${q.tiebreak} closest margin)` : ''} · {q.hint}</span></div>
           <div className="row" style={{ marginTop: 6, gap: 8, alignItems: 'center' }}>
@@ -420,6 +431,17 @@ function Props() {
               <Opt on={a[q.key] === 'yes'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'yes' }))}>{q.yes || 'Yes'}</Opt>
               <Opt on={a[q.key] === 'no'} color="#3B2A6E" onClick={() => setA(x => ({ ...x, [q.key]: 'no' }))}>{q.no || 'No'}</Opt>
             </>}
+            {q.type === 'order' && <div style={{ width: '100%' }}>
+              <p className="small muted" style={{ margin: '0 0 6px' }}>Tap couples in order, best score first. Leader going in: <b>{leaderNames}</b>. Each correct spot = +1 you, −1 them.</p>
+              <ol className="order-list">{order.map((id, i) => { const c = couples.find(x => x.id === id); return <li key={id}><span className="order-n">{i + 1}</span>{c?.celeb}<button type="button" className="btn small ghost" disabled={locked} onClick={() => setA(x => ({ ...x, order: order.filter(y => y !== id) }))}>✕</button></li> })}</ol>
+              <div className="row" style={{ gap: 6 }}>
+                {alive.filter(c => !order.includes(c.id)).map(c => (
+                  <button key={c.id} type="button" disabled={locked} onClick={() => addToOrder(c.id)} className="couple-chip" style={{ cursor: 'pointer' }}><span className="av">{initials(c)}</span>{c.celeb}</button>
+                ))}
+                {order.length > 0 && <button type="button" className="btn small ghost" disabled={locked} onClick={() => setA(x => ({ ...x, order: [] }))}>Start over</button>}
+              </div>
+              <p className="small muted" style={{ margin: '6px 0 0' }}>{order.length}/{alive.length} placed.</p>
+            </div>}
             {q.type === 'out' && alive.map(c => (
               <button key={c.id} type="button" disabled={locked} onClick={() => setA(x => ({ ...x, [q.key]: c.id }))} className="couple-chip"
                 style={{ cursor: 'pointer', borderColor: a[q.key] === c.id ? '#3B2A6E' : undefined, background: a[q.key] === c.id ? '#E7E1F5' : undefined }}>
@@ -430,12 +452,13 @@ function Props() {
         </div>
       ))}
       <div className="row" style={{ marginTop: 14, gap: 8 }}>
-        <span className="small muted">{locked ? 'Answers are locked for the night.' : 'All six needed before you can lock.'}</span>
+        <span className="small muted">{locked ? 'Answers are locked for the night.' : isLeader ? 'All six needed before you can lock.' : 'All six plus the full leaderboard before you can lock.'}</span>
         <button className="btn" style={{ marginLeft: 'auto' }} disabled={busy || locked || !complete} onClick={save}>{mine ? 'Update' : 'Lock it in'}</button>
       </div>
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your answers: {cfg.questions.map(q => {
         const v = mine.answers?.[q.key]
-        const txt = q.type === 'side' ? `${dteams[v?.side]?.name || '—'} by ${v?.margin ?? '?'}` : q.type === 'h2h' ? cname(v === 'a' ? q.a : q.b) : q.type === 'out' ? cname(Number(v)) : v
+        if (q.type === 'order' && isLeader) return null
+        const txt = q.type === 'side' ? `${dteams[v?.side]?.name || '—'} by ${v?.margin ?? '?'}` : q.type === 'h2h' ? cname(v === 'a' ? q.a : q.b) : q.type === 'out' ? cname(Number(v)) : q.type === 'order' ? (Array.isArray(v) ? v.map(id => cname(Number(id))).join(' › ') : '—') : v
         return <span key={q.key}><b>{txt || '—'}</b>{q.key === cfg.questions[cfg.questions.length - 1].key ? '' : ' · '}</span>
       })}{locked ? '' : ' Changeable until the lock.'}</p>}
     </section>

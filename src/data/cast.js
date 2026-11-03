@@ -198,12 +198,14 @@ export const DWTS_TEAMS = {
 
 // Weekly prop questions (week 9 on). Answers are stored per team as JSON; rulings live in weeks.extra.
 // Types: side (team dance winner + margin tiebreak), h2h (higher individual score), yesno (commissioner
-// rules via extra[key]), out (eliminated couple; a no-elimination night counts for everyone).
+// rules via extra[key]), out (eliminated couple; a no-elimination night counts for everyone), order (Chase the
+// Leader: non-leaders rank the night's couples by total score; each correct spot moves 1 point from the
+// league leader going into the week to the chaser).
 export const PROPS = {
   9: {
     title: 'Castle Call',
     emoji: '🏰',
-    blurb: 'Six questions. Answers lock at 8:05pm ET sharp, so no "I meant to change it."',
+    blurb: 'Six questions, plus Chase the Leader for everyone who isn\'t in first. Answers lock at 8:05pm ET sharp, so no "I meant to change it."',
     questions: [
       { key: 'side', type: 'side', label: 'Which team wins the team dance?', points: 5, tiebreak: 3, hint: 'the higher team-dance score; closest margin guess among the winners gets +3' },
       { key: 'captains', type: 'h2h', label: "Captain's Call: Tatyana or Connor?", a: 4, b: 13, points: 3, hint: 'higher individual-dance score' },
@@ -211,6 +213,7 @@ export const PROPS = {
       { key: 'kings', type: 'h2h', label: 'Harry or Ezra?', a: 2, b: 6, points: 3, hint: 'higher individual-dance score' },
       { key: 'ten', type: 'yesno', label: 'Does Cynthia Erivo give anyone a 10?', points: 3, hint: 'commissioner rules', yes: '🔟 Yes, she\'s generous', no: '🙅 No tens' },
       { key: 'out', type: 'out', label: 'Who goes home?', points: 4, hint: 'nobody goes home = everyone gets it' },
+      { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
     ],
   },
 }
