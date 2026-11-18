@@ -240,25 +240,6 @@ export const PROPS = {
       { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
     ],
   },
-  11: {
-    title: 'Semifinal Sheet',
-    emoji: '🥊',
-    blurb: 'Your matchup is decided by tonight\'s points: your couple, these answers, and a knockout if your opponent\'s couple goes home. Locks at 8:05pm ET.',
-    questions: [
-      { key: 'out', type: 'out', label: 'Who goes home?', points: 4, hint: 'nobody goes home = everyone gets it' },
-      { key: 'top', type: 'top', label: 'Highest score of the night', points: 3, hint: 'by the judges\' total; ties count' },
-      { key: 'perfect', type: 'yesno', label: 'Does anyone get a perfect score tonight?', points: 3, hint: 'any single dance; commissioner rules', yes: '💯 Someone goes perfect', no: '🙅 No perfect' },
-      { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
-    ],
-  },
-  12: {
-    title: 'Finale Sheet',
-    emoji: '🏆',
-    blurb: 'Last answers of the season. Locks at 8:05pm ET.',
-    questions: [
-      { key: 'top', type: 'top', label: 'Who wins the Mirrorball?', points: 6, hint: 'the couple that finishes first on the night' },
-      { key: 'perfect', type: 'yesno', label: 'Does anyone get a perfect score tonight?', points: 3, hint: 'any single dance; commissioner rules', yes: '💯 Yes', no: '🙅 No' },
-      { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
-    ],
-  },
+  // 11 and 12: no sheet. The playoffs are decided by drafted couples (plus the knockout) only.
+
 }
