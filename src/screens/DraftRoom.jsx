@@ -25,10 +25,14 @@ export default function DraftRoom() {
   }, [couples, scores])
 
   const weekPicks = picks.filter(p => p.week_id === week.id).sort((a, b) => a.pick_number - b.pick_number)
-  const taken = new Set(weekPicks.map(p => p.couple_id))
+  const onClockId = draft?.status === 'live' ? drafterAt(draft.order_ids, draft.current_index, draft.crunch) : null
+  // playoff week: each matchup drafts against itself, so "taken" only counts picks inside the on-clock team's matchup
+  const playoff = (league.settings?.playoff_weeks || []).includes(week.number) && Array.isArray(league.settings?.playoff_groups)
+  const groupOf = (id) => playoff ? (league.settings.playoff_groups.find(g => g.includes(id)) || [id]) : null
+  const clockGroup = onClockId ? groupOf(onClockId) : null
+  const taken = new Set(weekPicks.filter(p => !clockGroup || clockGroup.includes(p.team_id)).map(p => p.couple_id))
   const pool = alive.filter(c => draft?.crunch || !taken.has(c.id)).sort((a, b) => (avg[b.id] ?? (b.floor + b.ceiling) / 2) - (avg[a.id] ?? (a.floor + a.ceiling) / 2))
 
-  const onClockId = draft?.status === 'live' ? drafterAt(draft.order_ids, draft.current_index, draft.crunch) : null
   const onClock = onClockId ? teamById[onClockId] : null
   const isMe = !!(onClock && myTeam && onClock.id === myTeam.id)
   const revealEnds = draft?.started_at ? new Date(draft.started_at).getTime() + (draft.reveal_seconds ?? 10) * 1000 : 0
@@ -83,7 +87,7 @@ export default function DraftRoom() {
           <section className={`hero`} style={isMe ? { background: 'linear-gradient(120deg, var(--pink-soft), var(--gold-soft))', borderColor: 'var(--pink-deep)' } : undefined}>
             {isMe && <Sparkles n={10} seed={9} />}
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <div className="eyebrow">{week.title} · Pick {draft.current_index + 1} of {totalPicks(draft)} · Round {draft.crunch ? 1 : Math.floor(draft.current_index / teams.length) + 1}</div>
+              <div className="eyebrow">{week.title} · Pick {draft.current_index + 1} of {totalPicks(draft)}{playoff ? ' · matchup draft: your opponent can\'t take your couple, the other matchup can' : ` · Round ${draft.crunch ? 1 : Math.floor(draft.current_index / teams.length) + 1}`}</div>
               <span className="pill live">Live</span>
             </div>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
