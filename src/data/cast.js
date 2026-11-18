@@ -15,8 +15,8 @@ export const WEEKS = [
   { number: 7,  title: 'Dedication Night',  tuesday: '2026-10-20' },
   { number: 8,  title: 'Horror Movie Night', tuesday: '2026-10-27' },
   { number: 9,  title: 'Disney Night',      tuesday: '2026-11-02' },  // Monday: election coverage Tuesday,
-  { number: 10, title: 'Week 10',           tuesday: '2026-11-10' },
-  { number: 11, title: 'Semifinal',         tuesday: '2026-11-17' },
+  { number: 10, title: 'Grammy Night',      tuesday: '2026-11-10' },
+  { number: 11, title: 'Semifinals',        tuesday: '2026-11-17' },
   { number: 12, title: 'Finale',            tuesday: '2026-11-24' },
 ]
 
@@ -41,6 +41,8 @@ export const SCORES = [
   { week: 2, couple: 15, total: 14, eliminated: true }, { week: 2, couple: 1,  total: 19 },
   { week: 3, couple: 1, total: 21 }, { week: 3, couple: 2, total: 18 }, { week: 3, couple: 3, total: 21 }, { week: 3, couple: 4, total: 18 }, { week: 3, couple: 5, total: 16 }, { week: 3, couple: 6, total: 21 }, { week: 3, couple: 7, total: 18 }, { week: 3, couple: 9, total: 16 }, { week: 3, couple: 10, total: 15 }, { week: 3, couple: 11, total: 12 }, { week: 3, couple: 12, total: 19 }, { week: 3, couple: 13, total: 15 }, { week: 3, couple: 14, total: 18 }, { week: 3, couple: 16, total: 12, eliminated: true },
   { week: 4, couple: 1, total: 21 }, { week: 4, couple: 2, total: 24 }, { week: 4, couple: 3, total: 24 }, { week: 4, couple: 4, total: 21 }, { week: 4, couple: 5, total: 19 }, { week: 4, couple: 6, total: 21 }, { week: 4, couple: 7, total: 18 }, { week: 4, couple: 9, total: 17 }, { week: 4, couple: 10, total: 18, eliminated: true }, { week: 4, couple: 11, total: 15 }, { week: 4, couple: 12, total: 22 }, { week: 4, couple: 13, total: 20 }, { week: 4, couple: 14, total: 18 },
+  { week: 10, couple: 2, total: 31 }, { week: 10, couple: 3, total: 30 }, { week: 10, couple: 1, total: 30, eliminated: true }, { week: 10, couple: 12, total: 29 }, { week: 10, couple: 4, total: 27 }, { week: 10, couple: 6, total: 27 }, { week: 10, couple: 13, total: 27 },
+  { week: 9, couple: 2, total: 80, max: 80 }, { week: 9, couple: 1, total: 80, max: 80 }, { week: 9, couple: 6, total: 77, max: 80 }, { week: 9, couple: 13, total: 72, max: 80 }, { week: 9, couple: 3, total: 70, max: 80 }, { week: 9, couple: 5, total: 69, max: 80, eliminated: true }, { week: 9, couple: 4, total: 69, max: 80 }, { week: 9, couple: 12, total: 68, max: 80 },
   { week: 8, couple: 2, total: 40, max: 40 }, { week: 8, couple: 1, total: 37, max: 40 }, { week: 8, couple: 13, total: 37, max: 40 }, { week: 8, couple: 3, total: 36, max: 40 }, { week: 8, couple: 6, total: 35, max: 40 }, { week: 8, couple: 7, total: 35, max: 40, eliminated: true }, { week: 8, couple: 12, total: 32, max: 40 }, { week: 8, couple: 4, total: 28, max: 40 }, { week: 8, couple: 5, total: 26, max: 40 }, { week: 8, couple: 9, total: 26, max: 40, eliminated: true },
   { week: 7, couple: 12, total: 35, max: 40 }, { week: 7, couple: 7, total: 32, max: 40 }, { week: 7, couple: 3, total: 38, max: 40 }, { week: 7, couple: 9, total: 32, max: 40 }, { week: 7, couple: 13, total: 32, max: 40 }, { week: 7, couple: 5, total: 36, max: 40 }, { week: 7, couple: 4, total: 32, max: 40 }, { week: 7, couple: 1, total: 37, max: 40 }, { week: 7, couple: 2, total: 36, max: 40 }, { week: 7, couple: 6, total: 37, max: 40 },
   { week: 6, couple: 12, total: 33, max: 40 }, { week: 6, couple: 7, total: 31, max: 40 }, { week: 6, couple: 3, total: 34, max: 40 }, { week: 6, couple: 9, total: 30, max: 40 }, { week: 6, couple: 13, total: 25, max: 40 }, { week: 6, couple: 5, total: 33, max: 40 }, { week: 6, couple: 4, total: 29, max: 40 }, { week: 6, couple: 11, total: 22, max: 40, eliminated: true }, { week: 6, couple: 1, total: 36, max: 40 }, { week: 6, couple: 2, total: 33, max: 40 }, { week: 6, couple: 6, total: 36, max: 40 },
@@ -48,7 +50,7 @@ export const SCORES = [
 ]
 
 export const COUPLES = [
-  { id: 1, celeb: 'Jenna Dewan', pro: 'Val Chmerkovskiy', known_for: 'Step Up, The Rookie', tier: 1,
+  { id: 1, eliminated_week: 10, celeb: 'Jenna Dewan', pro: 'Val Chmerkovskiy', known_for: 'Step Up, The Rookie', tier: 1,
     position: 'Franchise quarterback', grade: 'A+', floor: 22, ceiling: 30,
     comp: 'Jordan Fisher, S25 champion', vote_engine: 'Step Up nostalgia, The Rookie',
     bio: "Toured behind Janet Jackson and Missy Elliott, made Step Up a franchise, then hosted World of Dance and judged SYTYCD, which means she has literally been paid to evaluate the thing she's now competing in. Paired with Val, who has two Mirrorballs and no interest in third place. This is the Nicole Scherzinger problem: the show cast a professional and everyone is going to act surprised.",
@@ -68,7 +70,7 @@ export const COUPLES = [
     comp: 'Alfonso Ribeiro, S19 champion', vote_engine: 'Fresh Prince, Abbott Elementary',
     bio: "Ashley Banks, all six seasons. Broadway in Fences. Five NAACP Image Awards. And here's the plot: her TV brother Carlton won this show and is now standing at the podium hosting it. That's not a storyline, that's a season-long arc the producers are going to milk until it screams.",
     red_flag: 'Everyone\'s going to yell "do the Carlton" and at some point, God help her, she will.' },
-  { id: 5, celeb: 'Julia Stiles', pro: 'Ezra Sosa', known_for: '10 Things I Hate About You', tier: 2,
+  { id: 5, eliminated_week: 9, celeb: 'Julia Stiles', pro: 'Ezra Sosa', known_for: '10 Things I Hate About You', tier: 2,
     position: 'Sleeper with a résumé', grade: 'B+', floor: 18, ceiling: 28,
     comp: 'Zendaya, S16 runner-up (minus the youth)', vote_engine: 'Every millennial who owned a Save the Last Dance DVD',
     bio: "Emmy and Golden Globe nominee, Kat Stratford, Bourne, Dexter, and a feature directing debut in 2025. But the whole league knows what this is about: in 2001 she did ballet-to-hip-hop for two hours in Save the Last Dance, and either that training is still in there or it isn't. Ezra Sosa choreographs like he's auditioning for a Mirrorball, which he is.",
@@ -186,7 +188,29 @@ export const THEMES = {
     done: 'The wish has been granted. Clocks start now.',
     tint: 'linear-gradient(120deg, #1E2A5A, #3B2A6E, #16203F)',
   },
+  11: {
+    name: 'Semifinals · Mirrorball Playoffs',
+    headline: 'Playoff seeding is set. Picking order is not.',
+    moves: ['🏆', '🥊', '🪩', '🔥', '🎯', '⚔️', '🥇', '💥'],
+    calls: ['1 seed vs 4 seed. 2 seed vs 3 seed. One pick each.', 'Six couples. Four picks. Two orphans.', 'Win your matchup tonight and you dance for the title next week.', 'Lose it and you dance for third. Which is still a thing.', 'If your opponent\'s couple goes home, that\'s a knockout.', 'The chasers are circling.'],
+    done: 'Bracket is live. Pick like your season depends on it, because it does.',
+    tint: 'linear-gradient(120deg, #FFE3F1, #FFF3C7, #DCEBFF)',
+  },
+  12: {
+    name: 'Finale · Mirrorball Playoffs',
+    headline: 'Championship night',
+    moves: ['🏆', '🪩', '🎉', '🥇', '🥉', '👑', '✨', '🎊'],
+    calls: ['Title game on the left. Third-place game on the right.', 'Somebody is about to be insufferable until next September.', 'The mirrorball is in the building.'],
+    done: 'Last draft of the season. Make it count.',
+    tint: 'linear-gradient(120deg, #FFF3C7, #FFE3F1, #E6DAFF)',
+  },
 }
+
+// Mirrorball Playoffs: the last two weeks are a bracket among the fantasy teams, layered on the season total.
+// Seeds = standings going into the semifinal week; 1v4 and 2v3; a matchup is decided by that night's fantasy
+// points (pick + props + knockout); ties go to the higher seed. Winners play for the title in the finale week,
+// losers for third. Knockout: if your matchup opponent's drafted couple is eliminated that night, +knockout.
+export const BRACKET = { semis: 11, final: 12, semiWin: 15, finalWin: 25, third: 10, knockout: 6 }
 
 // Disney Night team dances (every member gets the team score added to their individual score)
 export const DWTS_TEAMS = {
@@ -213,6 +237,27 @@ export const PROPS = {
       { key: 'kings', type: 'h2h', label: 'Harry or Ezra?', a: 2, b: 6, points: 3, hint: 'higher individual-dance score' },
       { key: 'ten', type: 'yesno', label: 'Does Cynthia Erivo give anyone a 10?', points: 3, hint: 'commissioner rules', yes: '🔟 Yes, she\'s generous', no: '🙅 No tens' },
       { key: 'out', type: 'out', label: 'Who goes home?', points: 4, hint: 'nobody goes home = everyone gets it' },
+      { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
+    ],
+  },
+  11: {
+    title: 'Semifinal Sheet',
+    emoji: '🥊',
+    blurb: 'Your matchup is decided by tonight\'s points: your couple, these answers, and a knockout if your opponent\'s couple goes home. Locks at 8:05pm ET.',
+    questions: [
+      { key: 'out', type: 'out', label: 'Who goes home?', points: 4, hint: 'nobody goes home = everyone gets it' },
+      { key: 'top', type: 'top', label: 'Highest score of the night', points: 3, hint: 'by the judges\' total; ties count' },
+      { key: 'perfect', type: 'yesno', label: 'Does anyone get a perfect score tonight?', points: 3, hint: 'any single dance; commissioner rules', yes: '💯 Someone goes perfect', no: '🙅 No perfect' },
+      { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
+    ],
+  },
+  12: {
+    title: 'Finale Sheet',
+    emoji: '🏆',
+    blurb: 'Last answers of the season. Locks at 8:05pm ET.',
+    questions: [
+      { key: 'top', type: 'top', label: 'Who wins the Mirrorball?', points: 6, hint: 'the couple that finishes first on the night' },
+      { key: 'perfect', type: 'yesno', label: 'Does anyone get a perfect score tonight?', points: 3, hint: 'any single dance; commissioner rules', yes: '💯 Yes', no: '🙅 No' },
       { key: 'order', type: 'order', label: "Chase the Leader: set tonight's leaderboard, top to bottom", points: 1, hint: 'not for the team in first; every couple you place in the right spot steals 1 point from the leader' },
     ],
   },

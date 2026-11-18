@@ -4,9 +4,10 @@ import { drafterAt, totalPicks, rosterSize, isCrunch } from '../lib/scoring.js'
 import DanceOff from './DanceOff.jsx'
 import { Tombstones } from './Graveyard.jsx'
 import { THEMES, PROPS, DWTS_TEAMS } from '../data/cast.js'
+import { Bracket } from './Board.jsx'
 
 export default function DraftRoom() {
-  const { api, league, teams, members, couples, scores, picks, predictions, gauntlet, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile } = useData()
+  const { api, league, teams, members, couples, scores, picks, predictions, gauntlet, myTeam, weekInfo, now, reload, showToast, isCommissioner, profile, standings } = useData()
   const theme = THEMES[weekInfo.week.number]
   const { week, phase, draft, msToOpen, roomOpen } = weekInfo
   const coupleById = Object.fromEntries(couples.map(c => [c.id, c]))
@@ -69,6 +70,8 @@ export default function DraftRoom() {
           </div>
         </section>
       )}
+
+      {standings?.bracket && (phase === 'pre' || phase === 'window') && <Bracket />}
 
       {/* ---------- DANCE-OFF ---------- */}
       {phase === 'drafting' && draft && revealing && <DanceOff draft={draft} teams={teams} members={members} now={now} week={week} couples={couples} />}
@@ -442,7 +445,7 @@ function Props() {
               </div>
               <p className="small muted" style={{ margin: '6px 0 0' }}>{order.length}/{alive.length} placed.</p>
             </div>}
-            {q.type === 'out' && alive.map(c => (
+            {(q.type === 'out' || q.type === 'top') && alive.map(c => (
               <button key={c.id} type="button" disabled={locked} onClick={() => setA(x => ({ ...x, [q.key]: c.id }))} className="couple-chip"
                 style={{ cursor: 'pointer', borderColor: a[q.key] === c.id ? '#3B2A6E' : undefined, background: a[q.key] === c.id ? '#E7E1F5' : undefined }}>
                 <span className="av" style={a[q.key] === c.id ? { background: '#3B2A6E' } : undefined}>{initials(c)}</span>{c.celeb}
@@ -458,7 +461,7 @@ function Props() {
       {mine && <p className="small muted" style={{ marginTop: 8 }}>Your answers: {cfg.questions.map(q => {
         const v = mine.answers?.[q.key]
         if (q.type === 'order' && isLeader) return null
-        const txt = q.type === 'side' ? `${dteams[v?.side]?.name || '—'} by ${v?.margin ?? '?'}` : q.type === 'h2h' ? cname(v === 'a' ? q.a : q.b) : q.type === 'out' ? cname(Number(v)) : q.type === 'order' ? (Array.isArray(v) ? v.map(id => cname(Number(id))).join(' › ') : '—') : v
+        const txt = q.type === 'side' ? `${dteams[v?.side]?.name || '—'} by ${v?.margin ?? '?'}` : q.type === 'h2h' ? cname(v === 'a' ? q.a : q.b) : (q.type === 'out' || q.type === 'top') ? cname(Number(v)) : q.type === 'order' ? (Array.isArray(v) ? v.map(id => cname(Number(id))).join(' › ') : '—') : v
         return <span key={q.key}><b>{txt || '—'}</b>{q.key === cfg.questions[cfg.questions.length - 1].key ? '' : ' · '}</span>
       })}{locked ? '' : ' Changeable until the lock.'}</p>}
     </section>

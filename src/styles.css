@@ -321,3 +321,15 @@ tr.leader td:first-child { border-left: 4px solid var(--gold); }
 .order-list li { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; font-weight: 700; }
 .order-list li .btn { margin-left: auto; padding: 2px 8px; }
 .order-n { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; background: #3B2A6E; color: #fff; font-size: .75rem; font-family: "Lilita One", sans-serif; }
+
+/* ---------- Mirrorball Playoffs bracket ---------- */
+.bk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; }
+.bk-col { display: grid; gap: 10px; align-content: start; }
+.bk-match { border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--surface); display: grid; gap: 6px; }
+.bk-match.pending { align-items: center; justify-items: center; min-height: 72px; border-style: dashed; }
+.bk-side { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: var(--surface-2); }
+.bk-side.won { background: #FFF3C7; box-shadow: inset 0 0 0 2px #E0B100; }
+.bk-side.lost { opacity: .55; }
+.bk-seed { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; background: var(--ink); color: #fff; font-size: .75rem; font-family: "Lilita One", sans-serif; }
+.bk-name { font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-pts { font-weight: 700; }

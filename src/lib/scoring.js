@@ -1,5 +1,5 @@
 // Scoring engine. Mirrors league_pick_points / league_totals in the SQL schema (props, week 9 on, are app-only).
-import { PROPS } from '../data/cast.js'
+import { PROPS, BRACKET } from '../data/cast.js'
 // Pure functions over plain data so demo mode and the live app share it.
 
 export const DEFAULT_SETTINGS = {
@@ -163,6 +163,11 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
           const hit = !!ex[q.key] === (a === 'yes')
           return { answer: a, hit, pts: hit ? q.points : 0, ruled: true }
         }
+        if (q.type === 'top') {
+          if (!ranked.length) return { answer: Number(a), hit: false, pts: 0, ruled: false }
+          const hit = ranked.filter(x => x.n === ranked[0].n).some(x => x.id === Number(a))
+          return { answer: Number(a), hit, pts: hit ? q.points : 0, ruled: true }
+        }
         if (q.type === 'out') {
           const hit = outs.length === 0 || outs.includes(Number(a))
           return { answer: Number(a), hit, pts: hit ? q.points : 0, ruled: true, nobodyOut: outs.length === 0 }
@@ -208,6 +213,42 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
     }
   }
 
+  // Mirrorball Playoffs (BRACKET): seeds from the season going into the semifinal week, 1v4 and 2v3,
+  // matchups decided by that night's points, winners to the title game, losers to the third-place game.
+  let bracket = null
+  const semiWeek = weeks.find(w => w.number === BRACKET.semis), finalWeek = weeks.find(w => w.number === BRACKET.final)
+  if (semiWeek && teams.length === 4) {
+    const thru = (n) => (id) => weeks.filter(w => w.number < n).reduce((s, w) => s + (lines[id].weeks[w.id]?.points || 0), 0)
+    const seeds = teams.map(t => t.id).sort((a, b) => thru(BRACKET.semis)(b) - thru(BRACKET.semis)(a))
+    const seedOf = Object.fromEntries(seeds.map((id, i) => [id, i + 1]))
+    const play = (wk, a, b, prize, label) => {
+      const m = { label, a, b, seedA: seedOf[a], seedB: seedOf[b], winner: null, loser: null, prize }
+      if (!wk || !weeksScored.includes(wk.id)) return m
+      // knockout: opponent's drafted couple eliminated tonight
+      const outs = new Set(scores.filter(s => s.week_id === wk.id && s.eliminated).map(s => s.couple_id))
+      for (const [me, opp] of [[a, b], [b, a]]) {
+        const ko = picks.some(p => p.week_id === wk.id && p.team_id === opp && outs.has(p.couple_id))
+        if (ko) { lines[me].weeks[wk.id].knockout = BRACKET.knockout; lines[me].weeks[wk.id].points += BRACKET.knockout }
+      }
+      const pa = lines[a].weeks[wk.id].points, pb = lines[b].weeks[wk.id].points
+      m.ptsA = pa; m.ptsB = pb
+      m.winner = pa > pb ? a : pb > pa ? b : (seedOf[a] < seedOf[b] ? a : b)   // tie → higher seed
+      m.loser = m.winner === a ? b : a
+      lines[m.winner].weeks[wk.id].bracket = { ...m, won: true, bonus: prize }
+      lines[m.loser].weeks[wk.id].bracket = { ...m, won: false, bonus: 0 }
+      lines[m.winner].weeks[wk.id].points += prize
+      return m
+    }
+    const semi1 = play(semiWeek, seeds[0], seeds[3], BRACKET.semiWin, 'Semifinal')
+    const semi2 = play(semiWeek, seeds[1], seeds[2], BRACKET.semiWin, 'Semifinal')
+    let final = null, third = null
+    if (semi1.winner && semi2.winner) {
+      final = play(finalWeek, semi1.winner, semi2.winner, BRACKET.finalWin, 'Championship')
+      third = play(finalWeek, semi1.loser, semi2.loser, BRACKET.third, 'Third place')
+    }
+    bracket = { seeds, seedOf, semis: [semi1, semi2], final, third, config: BRACKET }
+  }
+
   for (const t of teams) {
     const line = lines[t.id]
     for (const w of weeks) line.weeks[w.id].points = Math.round(line.weeks[w.id].points * 100) / 100
@@ -222,7 +263,7 @@ export function computeStandings({ season, league, teams, weeks, scores, picks, 
 
   const ranked = teams.map(t => lines[t.id]).sort((a, b) => b.total - a.total || b.weeklyWins - a.weeklyWins)
   ranked.forEach((l, i) => { l.rank = i + 1; l.behind = Math.round((ranked[0].total - l.total) * 100) / 100 })
-  return { teams: lines, ranked, weeksScored, settings }
+  return { teams: lines, ranked, weeksScored, settings, bracket }
 }
 
 /** Draft order for a week: week 1 by seed, otherwise reverse standings through the prior week. */

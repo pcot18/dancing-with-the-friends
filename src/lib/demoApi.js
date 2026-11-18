@@ -1,10 +1,10 @@
 // In-memory backend with a plausible mid-season snapshot. No network, no login.
 // Real season state (weeks 1–2 scored, two couples gone), pretend it's tonight 7:32pm ET: the
 // draft room just opened and you're on the clock. The other teams are bots (one "isn't here").
-import { SEASON, WEEKS, COUPLES, SCORES, weekLocks } from '../data/cast.js'
+import { SEASON, WEEKS, COUPLES, SCORES, weekLocks, etToUtc } from '../data/cast.js'
 import { DEFAULT_SETTINGS, rosterSize, isCrunch, computeStandings, drafterAt, totalPicks } from './scoring.js'
 
-const DEMO_BASE = new Date('2026-11-02T23:32:00Z').getTime()
+const DEMO_BASE = new Date('2026-11-17T23:32:00Z').getTime()
 const LOADED = Date.now()
 const nowMs = () => DEMO_BASE + (Date.now() - LOADED)
 const NOW = new Date(DEMO_BASE)
@@ -15,7 +15,7 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 10139
 const state = {
   season: { ...SEASON, winner_couple_id: null, is_current: true },
   couples: COUPLES.map(c => ({ ...c, season_id: SEASON.id, eliminated_week: c.eliminated_week ?? null })),
-  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: w.number >= 6 ? 4 : 3, extra: {}, picks_lock_at: w.number === 9 ? '2026-11-03T01:05:00Z' : null, ...weekLocks(w) })),
+  weeks: WEEKS.map(w => ({ id: w.number, season_id: SEASON.id, number: w.number, title: w.title, judge_count: w.number >= 6 && w.number <= 9 ? 4 : 3, extra: {}, picks_lock_at: w.number >= 9 ? new Date(etToUtc(w.tuesday, 20, 5)).toISOString() : null, ...weekLocks(w) })),
   scores: SCORES.map(x => ({ week_id: x.week, couple_id: x.couple, raw_total: x.total, max_possible: x.max || 30, eliminated: !!x.eliminated })),
   league: { id: 'demo-league', season_id: SEASON.id, name: 'Tuesday Night Ballroom Crimes', invite_code: 'SEQUIN', commissioner: ME, settings: { ...DEFAULT_SETTINGS } },
   teams: [
@@ -76,7 +76,7 @@ function botChoice(d, seed) {
 
 // --- tonight: the room is open, you're on the clock ------------------------------
 const ABSENT = 't3'   // Rhythm & Booze "isn't here": their picks go to the 60s timer
-const LIVE_WEEK = state.weeks.find(w => w.number === 9)
+const LIVE_WEEK = state.weeks.find(w => w.number === 11)
 openDraft(LIVE_WEEK)
 let botTimer = null
 function scheduleBots() {

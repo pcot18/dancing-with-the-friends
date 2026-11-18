@@ -3,6 +3,43 @@ import { rosterSize, isCrunch } from '../lib/scoring.js'
 
 const SERIES = ['var(--pink-deep)', 'var(--blue-deep)', 'var(--gold)', 'var(--ink)', 'var(--good)', 'var(--bad)']
 
+// Mirrorball Playoffs bracket (semifinal + finale weeks). Shown on the Board and in the Draft Room.
+export function Bracket() {
+  const { standings, teams, members, weeks } = useData()
+  const b = standings?.bracket
+  if (!b) return null
+  const teamById = Object.fromEntries(teams.map(t => [t.id, t]))
+  const semiWeek = weeks.find(w => w.number === b.config.semis), finalWeek = weeks.find(w => w.number === b.config.final)
+  const Match = ({ m, week }) => {
+    if (!m) return <div className="bk-match pending"><span className="muted small">Waiting on the semifinals</span></div>
+    const side = (id, seed, pts) => {
+      const t = teamById[id]; const won = m.winner === id; const lost = m.winner && !won
+      return <div className={`bk-side${won ? ' won' : ''}${lost ? ' lost' : ''}`}><span className="bk-seed">{seed}</span><span className="bk-name">{t?.emoji} {t?.name}</span>{pts != null && <span className="mono bk-pts">{fmtPts(pts)}</span>}{won && <span className="pill gold">+{m.prize}</span>}</div>
+    }
+    return (
+      <div className="bk-match">
+        <div className="eyebrow">{m.label}{week ? ` · ${week.title}` : ''}</div>
+        {side(m.a, m.seedA, m.ptsA)}
+        {side(m.b, m.seedB, m.ptsB)}
+        {!m.winner && <span className="small muted">decided by tonight's points · tie goes to the higher seed</span>}
+      </div>
+    )
+  }
+  return (
+    <section className="card" style={{ borderColor: 'var(--gold, #E0B100)' }}>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h2>🏆 Mirrorball Playoffs</h2>
+        <span className="pill gold">semi +{b.config.semiWin} · title +{b.config.finalWin} · third +{b.config.third} · knockout +{b.config.knockout}</span>
+      </div>
+      <p className="small muted">Seeded by the standings going into the semifinals. Win your matchup on the night's points and you play for the title; lose and you play for third. If your opponent's couple is the one sent home, that's a knockout: +{b.config.knockout} for you. Bonuses go into the season total.</p>
+      <div className="bk-grid">
+        <div className="bk-col"><Match m={b.semis[0]} week={semiWeek} /><Match m={b.semis[1]} week={semiWeek} /></div>
+        <div className="bk-col"><Match m={b.final} week={finalWeek} /><Match m={b.third} week={finalWeek} /></div>
+      </div>
+    </section>
+  )
+}
+
 export default function Board() {
   const { standings, teams, members, weeks, couples, picks, powerPlays, weekInfo, myTeam, league, api } = useData()
   const { week, phase, msToOpen, msToShowLock, draft } = weekInfo
@@ -41,6 +78,7 @@ export default function Board() {
           <><h1>Nobody's scored yet</h1><p style={{ margin: 0 }}>The commissioner starts the draft in the <a href="#draft">Draft Room</a>. Be there or get Guillermo.</p></>
         )}
       </section>
+      {standings.bracket && <Bracket />}
 
       <div className="grid two">
         <section className="card pop">
